@@ -4,6 +4,11 @@ import type { Locale } from '@/lib/types';
 const WHATSAPP_NUMBER =
   process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, '') || '393715712490';
 
+const DEFAULT_MESSAGE: Record<Locale, string> = {
+  it: 'Ciao, vorrei informazioni su HARIMI.',
+  en: 'Hi, I’d like some information about HARIMI.',
+};
+
 function WhatsAppGlyph({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden className={className} fill="currentColor">
@@ -14,7 +19,9 @@ function WhatsAppGlyph({ className }: { className?: string }) {
 
 export function WhatsAppFab({ locale }: { locale: Locale }) {
   const it = locale === 'it';
-  const href = `https://wa.me/${WHATSAPP_NUMBER}`;
+  const message =
+    process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE?.trim() || DEFAULT_MESSAGE[locale];
+  const href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
   const label = it ? 'Scrivici su WhatsApp' : 'Message us on WhatsApp';
 
   return (

@@ -252,6 +252,15 @@ function QuickLookPanel({
   });
   const [qty, setQty] = useState(1);
   const [message, setMessage] = useState('');
+  const [justAdded, setJustAdded] = useState(false);
+  const addedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (addedTimer.current) clearTimeout(addedTimer.current);
+    },
+    [],
+  );
 
   const selected = useMemo(
     () =>
@@ -287,7 +296,10 @@ function QuickLookPanel({
       },
       qty,
     );
+    setJustAdded(true);
     setMessage(it ? 'Aggiunto alla borsa' : 'Added to bag');
+    if (addedTimer.current) clearTimeout(addedTimer.current);
+    addedTimer.current = setTimeout(() => setJustAdded(false), 2000);
   };
 
   return (
@@ -453,12 +465,33 @@ function QuickLookPanel({
                 type="button"
                 onClick={onAdd}
                 disabled={!selected?.in_stock || maxQty < 1}
-                className="eyebrow h-12 flex-1 bg-ink text-ivory transition hover:opacity-90 disabled:opacity-40"
+                className={`eyebrow h-12 flex-1 transition-[opacity,background-color,color] duration-(--dur-base) disabled:opacity-40${
+                  justAdded
+                    ? ' add-confirm border border-ink bg-ivory text-ink'
+                    : ' bg-ink text-ivory hover:opacity-90'
+                }`}
               >
-                {it ? 'Aggiungi alla borsa' : 'Add to bag'}
+                {justAdded
+                  ? it
+                    ? 'Aggiunto ✓'
+                    : 'Added ✓'
+                  : it
+                    ? 'Aggiungi alla borsa'
+                    : 'Add to bag'}
               </button>
             </div>
-            {message ? <p className="text-sm text-muted">{message}</p> : null}
+            {message ? (
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+                <span>{message}</span>
+                <Link
+                  href={`/${locale}/cart`}
+                  onClick={onClose}
+                  className="underline underline-offset-4 transition-colors duration-(--dur-fast) hover:text-ink"
+                >
+                  {it ? 'Vedi la borsa' : 'View bag'}
+                </Link>
+              </p>
+            ) : null}
           </>
         )}
 

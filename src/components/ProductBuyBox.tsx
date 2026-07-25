@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatEur } from '@/lib/api';
 import { useCart } from '@/lib/cart';
 import { InfoModal } from '@/components/info/InfoModal';
@@ -61,7 +61,16 @@ export function ProductBuyBox({
   });
   const [qty, setQty] = useState(1);
   const [message, setMessage] = useState('');
+  const [justAdded, setJustAdded] = useState(false);
   const [info, setInfo] = useState<InfoKind>(null);
+  const addedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (addedTimer.current) clearTimeout(addedTimer.current);
+    },
+    [],
+  );
 
   const selected = useMemo(
     () =>
@@ -107,7 +116,10 @@ export function ProductBuyBox({
       },
       qty,
     );
+    setJustAdded(true);
     setMessage(it ? 'Aggiunto alla borsa' : 'Added to bag');
+    if (addedTimer.current) clearTimeout(addedTimer.current);
+    addedTimer.current = setTimeout(() => setJustAdded(false), 2000);
   };
 
   const anyInStock = product.variants.some((v) => v.in_stock);
@@ -255,12 +267,30 @@ export function ProductBuyBox({
               type="button"
               onClick={onAdd}
               disabled={!selected?.in_stock || maxQty < 1}
-              className="h-12 w-full bg-ink text-[11px] tracking-[0.2em] text-ivory uppercase transition-opacity duration-(--dur-base) hover:opacity-90 disabled:opacity-40"
+              className={`h-12 w-full text-[11px] tracking-[0.2em] uppercase transition-[opacity,background-color,color] duration-(--dur-base) disabled:opacity-40${
+                justAdded
+                  ? ' add-confirm border border-ink bg-ivory text-ink'
+                  : ' bg-ink text-ivory hover:opacity-90'
+              }`}
             >
-              {it ? 'Aggiungi alla borsa' : 'Add to bag'}
+              {justAdded
+                ? it
+                  ? 'Aggiunto ✓'
+                  : 'Added ✓'
+                : it
+                  ? 'Aggiungi alla borsa'
+                  : 'Add to bag'}
             </button>
             {message ? (
-              <p className="mt-3 text-sm text-muted">{message}</p>
+              <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+                <span>{message}</span>
+                <Link
+                  href={`/${locale}/cart`}
+                  className="underline underline-offset-4 transition-colors duration-(--dur-fast) hover:text-ink"
+                >
+                  {it ? 'Vedi la borsa' : 'View bag'}
+                </Link>
+              </p>
             ) : null}
             <p className="mt-4 text-sm leading-relaxed text-muted">
               {it

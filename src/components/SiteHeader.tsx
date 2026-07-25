@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { useCart } from '@/lib/cart';
+import { MiniCart } from '@/components/MiniCart';
 import { audienceLabel } from '@/lib/i18n';
 import {
   categoryLandingHref,
@@ -65,10 +66,32 @@ export function SiteHeader({
   // Prefer URL path so search/offers stay on kids/men when browsing those worlds.
   // Locale layout used to always pass audience="women", which hid pathname.
   const audience = audienceFromPath(pathname) ?? audienceProp ?? 'women';
-  const { count } = useCart();
+  const { count, ready: cartReady, openMiniCart } = useCart();
   const copy = navCopy(locale);
   const [panel, setPanel] = useState<Panel>(null);
   const [query, setQuery] = useState('');
+  const [bagPulse, setBagPulse] = useState(false);
+  const prevBagCount = useRef<number | null>(null);
+
+  const openBag = () => {
+    setPanel(null);
+    openMiniCart();
+  };
+
+  useEffect(() => {
+    if (!cartReady) return;
+    if (prevBagCount.current === null) {
+      prevBagCount.current = count;
+      return;
+    }
+    if (count > prevBagCount.current) {
+      setBagPulse(true);
+      const timer = window.setTimeout(() => setBagPulse(false), 520);
+      prevBagCount.current = count;
+      return () => window.clearTimeout(timer);
+    }
+    prevBagCount.current = count;
+  }, [count, cartReady]);
 
   const womenRoot = useMemo(
     () => categories.find((c) => c.slug === 'women'),
@@ -200,13 +223,17 @@ export function SiteHeader({
           >
             {otherLocale.toUpperCase()}
           </Link>
-          <Link
-            href={`/${locale}/cart`}
-            className="eyebrow tap inline-flex items-center justify-center px-2 transition hover:text-muted"
+          <button
+            type="button"
+            onClick={openBag}
+            className={`eyebrow tap inline-flex items-center justify-center px-2 transition hover:text-muted${
+              bagPulse ? ' bag-pulse' : ''
+            }`}
+            aria-haspopup="dialog"
           >
             {copy.bag}
             {count > 0 ? ` (${count})` : ''}
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -292,11 +319,17 @@ export function SiteHeader({
           brands={brands}
           copy={copy}
           onClose={close}
+          onOpenBag={() => {
+            close();
+            openMiniCart();
+          }}
           onSearch={(q) => {
             window.location.href = shopHref(locale, audience, q ? { q } : {});
           }}
         />
       ) : null}
+
+      <MiniCart locale={locale} />
 
       {panel && panel !== 'mobile' ? (
         <button
@@ -476,6 +509,7 @@ function MobileDrawer({
   brands,
   copy,
   onClose,
+  onOpenBag,
   onSearch,
 }: {
   locale: Locale;
@@ -485,6 +519,7 @@ function MobileDrawer({
   brands: Brand[];
   copy: ReturnType<typeof navCopy>;
   onClose: () => void;
+  onOpenBag: () => void;
   onSearch: (q: string) => void;
 }) {
   const [q, setQ] = useState('');
@@ -631,9 +666,13 @@ function MobileDrawer({
               >
                 {copy.offers}
               </Link>
-              <Link href={`/${locale}/cart`} className="block font-serif text-2xl" onClick={onClose}>
+              <button
+                type="button"
+                className="block w-full text-left font-serif text-2xl"
+                onClick={onOpenBag}
+              >
                 {copy.bag}
-              </Link>
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-4">
