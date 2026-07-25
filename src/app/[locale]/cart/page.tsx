@@ -17,90 +17,141 @@ export default function CartPage() {
     0,
   );
 
-  return (
-    <>
-<main className="container-page py-12 md:py-16">
-        <h1 className="font-serif text-4xl">
-          {locale === 'it' ? 'Carrello' : 'Shopping bag'}
-        </h1>
+  const it = locale === 'it';
 
-        {count === 0 ? (
-          <div className="mt-12 border border-line px-6 py-16 text-center">
-            <p className="text-muted">
-              {locale === 'it' ? 'Il carrello è vuoto.' : 'Your bag is empty.'}
-            </p>
-            <Link
-              href={`/${locale}/women/shop`}
-              className="mt-6 inline-block border border-ink px-5 py-2 text-xs tracking-[0.16em] uppercase"
-            >
-              {locale === 'it' ? 'Continua lo shopping' : 'Continue shopping'}
-            </Link>
-          </div>
-        ) : (
-          <div className="mt-10 grid gap-12 lg:grid-cols-[1.4fr_0.8fr]">
-            <ul className="divide-y divide-line border-y border-line">
+  return (
+    <main className="container-page page-enter py-14 md:py-20">
+      <header className="flex items-baseline justify-between gap-4 border-b border-line pb-6">
+        <h1 className="font-serif text-4xl md:text-5xl">
+          {it ? 'Carrello' : 'Shopping bag'}
+        </h1>
+        {count > 0 ? (
+          <span className="eyebrow text-muted">
+            {count} {it ? (count === 1 ? 'articolo' : 'articoli') : count === 1 ? 'item' : 'items'}
+          </span>
+        ) : null}
+      </header>
+
+      {count === 0 ? (
+        <div className="mx-auto mt-24 max-w-md text-center">
+          <p className="eyebrow text-muted">{it ? 'La tua borsa' : 'Your bag'}</p>
+          <p className="mt-5 font-serif text-3xl leading-snug">
+            {it ? 'Il carrello è ancora vuoto.' : 'Your bag is still empty.'}
+          </p>
+          <p className="mt-4 text-sm leading-relaxed text-muted">
+            {it
+              ? 'Scopri la selezione HARIMI e aggiungi i tuoi capi preferiti.'
+              : 'Explore the HARIMI selection and add your favourite pieces.'}
+          </p>
+          <Link
+            href={`/${locale}/women/shop`}
+            className="eyebrow mt-8 inline-flex min-h-11 items-center bg-ink px-8 text-ivory transition hover:opacity-90"
+          >
+            {it ? 'Inizia lo shopping' : 'Start shopping'}
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-12 grid gap-12 lg:grid-cols-[1.4fr_0.8fr] lg:gap-16">
+          <div>
+            <ul className="divide-y divide-line border-b border-line">
               {lines.map((line) => (
-                <li key={line.variantId} className="flex gap-4 py-6">
-                  <div className="h-28 w-24 shrink-0 overflow-hidden bg-ivory-2">
+                <li key={line.variantId} className="flex gap-5 py-7">
+                  <Link
+                    href={`/${locale}/p/${line.productSlug}`}
+                    className="h-32 w-24 shrink-0 overflow-hidden bg-ivory-2"
+                  >
                     {line.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={line.imageUrl} alt="" className="h-full w-full object-cover" />
+                      <img
+                        src={line.imageUrl}
+                        alt=""
+                        className="h-full w-full object-cover object-[center_18%]"
+                      />
                     ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <Link href={`/${locale}/p/${line.productSlug}`} className="font-serif text-xl">
-                      {line.title}
-                    </Link>
+                  </Link>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="flex items-start justify-between gap-4">
+                      <Link
+                        href={`/${locale}/p/${line.productSlug}`}
+                        className="font-serif text-xl leading-snug hover:text-muted"
+                      >
+                        {line.title}
+                      </Link>
+                      <p className="shrink-0 text-sm">
+                        {formatEur(Number(line.unitPrice) * line.quantity, locale)}
+                      </p>
+                    </div>
                     <p className="mt-1 text-sm text-muted">
                       {[line.color, line.size].filter(Boolean).join(' / ')}
                     </p>
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      <input
-                        type="number"
-                        min={1}
-                        value={line.quantity}
-                        onChange={(e) => updateQty(line.variantId, Number(e.target.value) || 1)}
-                        className="h-9 w-16 border border-line bg-transparent px-2 text-sm"
-                      />
+                    <div className="mt-auto flex flex-wrap items-center gap-4 pt-4">
+                      <div className="inline-flex items-center border border-line">
+                        <button
+                          type="button"
+                          aria-label={it ? 'Diminuisci' : 'Decrease'}
+                          className="tap inline-flex items-center justify-center text-lg transition hover:bg-ivory-2 disabled:opacity-40"
+                          disabled={line.quantity <= 1}
+                          onClick={() =>
+                            updateQty(line.variantId, Math.max(1, line.quantity - 1))
+                          }
+                        >
+                          −
+                        </button>
+                        <span className="w-10 text-center text-sm">{line.quantity}</span>
+                        <button
+                          type="button"
+                          aria-label={it ? 'Aumenta' : 'Increase'}
+                          className="tap inline-flex items-center justify-center text-lg transition hover:bg-ivory-2"
+                          onClick={() => updateQty(line.variantId, line.quantity + 1)}
+                        >
+                          +
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeItem(line.variantId)}
-                        className="text-xs tracking-[0.14em] text-muted uppercase hover:text-ink"
+                        className="eyebrow inline-flex min-h-11 items-center text-muted transition hover:text-ink"
                       >
-                        {locale === 'it' ? 'Rimuovi' : 'Remove'}
+                        {it ? 'Rimuovi' : 'Remove'}
                       </button>
                     </div>
                   </div>
-                  <p className="text-sm">
-                    {formatEur(Number(line.unitPrice) * line.quantity, locale)}
-                  </p>
                 </li>
               ))}
             </ul>
+            <Link
+              href={`/${locale}/women/shop`}
+              className="eyebrow mt-8 inline-flex min-h-11 items-center text-muted transition hover:text-ink"
+            >
+              {it ? '← Continua lo shopping' : '← Continue shopping'}
+            </Link>
+          </div>
 
-            <aside className="h-fit border border-line p-6">
-              <p className="flex justify-between text-sm">
-                <span className="text-muted">{locale === 'it' ? 'Subtotale' : 'Subtotal'}</span>
-                <span>{formatEur(subtotal, locale)}</span>
+          <aside className="h-fit lg:sticky lg:top-[calc(var(--header-h)+2rem)]">
+            <div className="border border-line p-6 md:p-7">
+              <p className="eyebrow text-muted">{it ? 'Riepilogo' : 'Summary'}</p>
+              <p className="mt-6 flex items-baseline justify-between border-t border-line pt-6 text-base">
+                <span className="text-muted">{it ? 'Subtotale' : 'Subtotal'}</span>
+                <span className="font-serif text-2xl">{formatEur(subtotal, locale)}</span>
               </p>
-              <p className="mt-3 text-xs text-muted">
-                {locale === 'it'
+              <p className="mt-4 text-xs leading-relaxed text-muted">
+                {it
                   ? 'Spedizione e IVA (inclusa) calcolati al checkout.'
                   : 'Shipping and VAT (incl.) calculated at checkout.'}{' '}
                 <Link href={`/${locale}/shipping-returns`} className="underline hover:text-ink">
-                  {locale === 'it' ? 'Dettagli' : 'Details'}
+                  {it ? 'Dettagli' : 'Details'}
                 </Link>
               </p>
               <Link
                 href={`/${locale}/checkout`}
-                className="mt-8 flex h-12 items-center justify-center bg-ink text-xs tracking-[0.18em] text-ivory uppercase"
+                className="eyebrow mt-8 flex h-12 items-center justify-center bg-ink text-ivory transition hover:opacity-90"
               >
-                {locale === 'it' ? 'Vai al checkout' : 'Checkout'}
+                {it ? 'Vai al checkout' : 'Checkout'}
               </Link>
-            </aside>
-          </div>
-        )}
-      </main>
-    </>
+            </div>
+          </aside>
+        </div>
+      )}
+    </main>
   );
 }

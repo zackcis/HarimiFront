@@ -4,7 +4,7 @@ import type { Audience, Brand, CategoryNode, Locale } from '@/lib/types';
 
 export async function StoreChrome({
   locale,
-  audience = 'women',
+  audience,
   children,
   showHeader = true,
 }: {

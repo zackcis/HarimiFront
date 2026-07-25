@@ -4,13 +4,14 @@ import {
   CategoryLandingBody,
   CategoryLandingHero,
 } from '@/components/category/CategoryLanding';
-import { fetchCategory, fetchProducts } from '@/lib/api';
+import { fetchCategories, fetchCategory, fetchProducts } from '@/lib/api';
 import { categoryEditorial } from '@/lib/editorial';
 import { audienceLabel, isAudience, isLocale } from '@/lib/i18n';
-import { categoryMediaPath, mediaExists } from '@/lib/media';
-import { categoryLandingHref, categoryShopHref } from '@/lib/nav';
+import { categoryMediaPath, preferMedia } from '@/lib/media';
+import { audienceCategorySlug, categoryShopHref } from '@/lib/nav';
 import { pageMetadata } from '@/lib/seo';
-import type { Audience, Locale, ProductCard } from '@/lib/types';
+import { findCategoryInTree } from '@/lib/shop';
+import type { Audience, CategoryNode, Locale, ProductCard } from '@/lib/types';
 
 export async function generateMetadata({
   params,
@@ -58,17 +59,25 @@ export default async function CategoryLandingPage({
     notFound();
   }
 
-  const parentSlug = category.parent?.slug;
-  const isAudienceRoot = category.slug === audience && !parentSlug;
-  const isAudienceChild = parentSlug === audience;
-  if (!isAudienceRoot && !isAudienceChild) {
+  // Allow any category whose ancestry reaches the audience root (L2, L3, …).
+  let inAudienceTree = false;
+  try {
+    const tree = await fetchCategories(locale);
+    const audienceRoot = tree.find((c) => c.slug === audienceCategorySlug(audience));
+    inAudienceTree = Boolean(audienceRoot && findCategoryInTree(audienceRoot, category.slug));
+  } catch {
+    // Tree unavailable — fall back to the shallow parent check.
+    const parentSlug = category.parent?.slug;
+    inAudienceTree = (category.slug === audience && !parentSlug) || parentSlug === audience;
+  }
+  if (!inAudienceTree) {
     notFound();
   }
 
   const copy = categoryEditorial(category.slug, category.name, locale);
-  const mediaPath = categoryMediaPath(category.slug);
-  const hasMedia = await mediaExists(mediaPath);
-  const heroImage = hasMedia ? mediaPath : category.image_url;
+  const heroImage =
+    (await preferMedia(category.hero_url, categoryMediaPath(category.slug))) ??
+    category.image_url;
 
   let featured: ProductCard[] = [];
   try {
@@ -84,13 +93,17 @@ export default async function CategoryLandingPage({
   }
 
   const shopHref = categoryShopHref(locale, audience, category.slug);
-  const childLinks =
+  const typeCategories: CategoryNode[] =
     category.children?.length > 0
-      ? category.children.map((child) => ({
+      ? category.children.map((child, index) => ({
+          id: index + 1,
+          slug: child.slug,
           name: child.name,
-          href: categoryLandingHref(locale, audience, child.slug),
+          parent_id: category.id,
+          image_url: child.image_url,
+          children: [],
         }))
-      : undefined;
+      : [];
 
   return (
     <main>
@@ -106,7 +119,9 @@ export default async function CategoryLandingPage({
         copy={copy}
         shopHref={shopHref}
         featured={featured}
-        childLinks={childLinks}
+        typeCategories={typeCategories}
+        categorySlug={category.slug}
+        categoryImage={category.image_url}
       />
     </main>
   );

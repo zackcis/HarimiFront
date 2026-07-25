@@ -36,7 +36,7 @@ export function ActiveFilterChips({
   });
 
   return (
-    <div className="mt-6 flex flex-wrap items-center gap-2">
+    <div className="mt-3 flex flex-wrap items-center gap-2">
       {chips.map((chip) => (
         <Link
           key={chip.key}
@@ -45,14 +45,14 @@ export function ActiveFilterChips({
             audience,
             withShopQuery(query, {}, [chip.key]),
           )}
-          className="border border-line px-3 py-1.5 text-xs text-muted transition hover:border-ink hover:text-ink"
+          className="inline-flex min-h-9 items-center border border-line px-3 py-1.5 text-xs text-muted transition hover:border-ink hover:text-ink"
         >
           {chip.label} ×
         </Link>
       ))}
       <Link
         href={clearAll}
-        className="text-[11px] tracking-[0.14em] uppercase underline"
+        className="eyebrow inline-flex min-h-9 items-center underline"
       >
         {it ? 'Azzera' : 'Clear all'}
       </Link>

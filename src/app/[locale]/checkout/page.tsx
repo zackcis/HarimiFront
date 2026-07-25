@@ -107,108 +107,134 @@ function CheckoutPageInner() {
     }
   };
 
+  const it = locale === 'it';
+
   if (!lines.length) {
     return (
-      <>
-<main className="container-page py-16">
-          <p className="text-muted">
-            {locale === 'it' ? 'Il carrello è vuoto.' : 'Your bag is empty.'}
+      <main className="container-page page-enter py-24">
+        <div className="mx-auto max-w-md text-center">
+          <p className="eyebrow text-muted">{it ? 'Checkout' : 'Checkout'}</p>
+          <p className="mt-5 font-serif text-3xl leading-snug">
+            {it ? 'Il carrello è vuoto.' : 'Your bag is empty.'}
           </p>
-        </main>
-      </>
+          <Link
+            href={`/${locale}/women/shop`}
+            className="eyebrow mt-8 inline-flex min-h-11 items-center bg-ink px-8 text-ivory transition hover:opacity-90"
+          >
+            {it ? 'Inizia lo shopping' : 'Start shopping'}
+          </Link>
+        </div>
+      </main>
     );
   }
 
   return (
-    <>
-<main className="container-page py-12 md:py-16">
-        <h1 className="font-serif text-4xl">
-          {locale === 'it' ? 'Checkout' : 'Checkout'}
+    <main className="container-page page-enter py-14 md:py-20">
+      <header className="border-b border-line pb-6">
+        <h1 className="font-serif text-4xl md:text-5xl">
+          {it ? 'Checkout' : 'Checkout'}
         </h1>
-        <p className="mt-3 text-sm text-muted">
-          {locale === 'it'
+        <p className="mt-4 text-sm text-muted">
+          {it
             ? 'Acquisto ospite · Spedizione in Italia · Pagamento sicuro con Stripe'
             : 'Guest checkout · Shipping in Italy · Secure Stripe payment'}
         </p>
         <p className="mt-2 text-xs text-muted">
           <Link href={`/${locale}/shipping-returns`} className="underline hover:text-ink">
-            {locale === 'it' ? 'Spedizioni e resi' : 'Shipping & returns'}
+            {it ? 'Spedizioni e resi' : 'Shipping & returns'}
           </Link>
           {' · '}
           <Link href={`/${locale}/size-guide`} className="underline hover:text-ink">
-            {locale === 'it' ? 'Guida alle taglie' : 'Size guide'}
+            {it ? 'Guida alle taglie' : 'Size guide'}
           </Link>
         </p>
-        {cancelled ? (
-          <div className="mt-6 border border-line bg-ivory/60 p-4">
-            <p className="text-sm text-ink">
-              {locale === 'it'
-                ? 'Hai annullato il pagamento su Stripe. Il carrello è ancora pieno: puoi riprovare quando vuoi.'
-                : 'You cancelled payment on Stripe. Your bag is still here — try again whenever you like.'}
-            </p>
-          </div>
-        ) : null}
+      </header>
 
-        <form onSubmit={onSubmit} className="mt-10 grid gap-12 lg:grid-cols-2">
-          <div className="space-y-4">
-            <Field name="name" label={locale === 'it' ? 'Nome completo' : 'Full name'} required />
+      {cancelled ? (
+        <div className="mt-6 border border-line bg-ivory/60 p-4">
+          <p className="text-sm text-ink">
+            {it
+              ? 'Hai annullato il pagamento su Stripe. Il carrello è ancora pieno: puoi riprovare quando vuoi.'
+              : 'You cancelled payment on Stripe. Your bag is still here — try again whenever you like.'}
+          </p>
+        </div>
+      ) : null}
+
+      <form onSubmit={onSubmit} className="mt-12 grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16">
+        <div className="space-y-12">
+          <fieldset className="space-y-4">
+            <legend className="eyebrow mb-2 text-muted">{it ? 'Contatti' : 'Contact'}</legend>
+            <Field name="name" label={it ? 'Nome completo' : 'Full name'} required />
             <Field name="email" label="Email" type="email" required />
-            <Field name="phone" label={locale === 'it' ? 'Telefono' : 'Phone'} required />
-            <Field name="line1" label={locale === 'it' ? 'Indirizzo' : 'Address'} required />
-            <Field name="line2" label={locale === 'it' ? 'Interno / note' : 'Apt / notes'} />
-            <div className="grid grid-cols-2 gap-3">
-              <Field name="city" label={locale === 'it' ? 'Città' : 'City'} required />
-              <Field name="province" label={locale === 'it' ? 'Provincia' : 'Province'} required />
-            </div>
-            <Field name="postal_code" label={locale === 'it' ? 'CAP' : 'Postal code'} required />
-            <Field name="notes" label={locale === 'it' ? 'Note ordine' : 'Order notes'} />
-          </div>
+            <Field name="phone" label={it ? 'Telefono' : 'Phone'} required />
+          </fieldset>
 
-          <aside className="h-fit border border-line p-6">
-            <h2 className="font-serif text-2xl">
-              {locale === 'it' ? 'Riepilogo' : 'Summary'}
-            </h2>
+          <fieldset className="space-y-4 border-t border-line pt-10">
+            <legend className="eyebrow mb-2 text-muted">{it ? 'Spedizione' : 'Shipping'}</legend>
+            <Field name="line1" label={it ? 'Indirizzo' : 'Address'} required />
+            <Field name="line2" label={it ? 'Interno / note' : 'Apt / notes'} />
+            <div className="grid grid-cols-2 gap-3">
+              <Field name="city" label={it ? 'Città' : 'City'} required />
+              <Field name="province" label={it ? 'Provincia' : 'Province'} required />
+            </div>
+            <Field name="postal_code" label={it ? 'CAP' : 'Postal code'} required />
+          </fieldset>
+
+          <fieldset className="space-y-4 border-t border-line pt-10">
+            <legend className="eyebrow mb-2 text-muted">{it ? 'Note' : 'Notes'}</legend>
+            <Field name="notes" label={it ? 'Note ordine' : 'Order notes'} />
+          </fieldset>
+        </div>
+
+        <aside className="h-fit lg:sticky lg:top-[calc(var(--header-h)+2rem)]">
+          <div className="border border-line p-6 md:p-7">
+            <p className="eyebrow text-muted">{it ? 'Riepilogo' : 'Summary'}</p>
             <ul className="mt-6 space-y-3 text-sm">
               {lines.map((line) => (
                 <li key={line.variantId} className="flex justify-between gap-3">
-                  <span>
-                    {line.title} × {line.quantity}
+                  <span className="text-muted">
+                    {line.title} <span className="text-ink">× {line.quantity}</span>
                   </span>
-                  <span>{formatEur(Number(line.unitPrice) * line.quantity, locale)}</span>
+                  <span className="shrink-0">
+                    {formatEur(Number(line.unitPrice) * line.quantity, locale)}
+                  </span>
                 </li>
               ))}
             </ul>
             {previewTotal ? (
-              <p className="mt-6 flex justify-between border-t border-line pt-4 text-sm">
-                <span>{locale === 'it' ? 'Totale stimato' : 'Estimated total'}</span>
-                <span>{formatEur(previewTotal, locale)}</span>
+              <p className="mt-6 flex items-baseline justify-between border-t border-line pt-5">
+                <span className="text-muted">{it ? 'Totale stimato' : 'Estimated total'}</span>
+                <span className="font-serif text-2xl">{formatEur(previewTotal, locale)}</span>
               </p>
             ) : null}
-            {error ? <p className="mt-4 text-sm text-red-700">{error}</p> : null}
+            {error ? <p className="mt-4 text-sm text-sale">{error}</p> : null}
             <button
               type="button"
               onClick={onPreview}
-              className="mt-6 w-full border border-ink py-3 text-xs tracking-[0.16em] uppercase"
+              className="eyebrow mt-6 flex min-h-11 w-full items-center justify-center border border-ink transition hover:bg-ink hover:text-ivory"
             >
-              {locale === 'it' ? 'Calcola totale' : 'Calculate total'}
+              {it ? 'Calcola totale' : 'Calculate total'}
             </button>
             <button
               type="submit"
               disabled={pending}
-              className="mt-3 w-full bg-ink py-3 text-xs tracking-[0.16em] text-ivory uppercase disabled:opacity-60"
+              className="eyebrow mt-3 flex min-h-11 w-full items-center justify-center bg-ink text-ivory transition hover:opacity-90 disabled:opacity-60"
             >
               {pending
-                ? locale === 'it'
+                ? it
                   ? 'Reindirizzamento…'
                   : 'Redirecting…'
-                : locale === 'it'
+                : it
                   ? 'Paga con Stripe'
                   : 'Pay with Stripe'}
             </button>
-          </aside>
-        </form>
-      </main>
-    </>
+            <p className="mt-4 text-center text-[11px] text-muted">
+              {it ? 'Pagamento sicuro · SSL' : 'Secure payment · SSL'}
+            </p>
+          </div>
+        </aside>
+      </form>
+    </main>
   );
 }
 
@@ -224,13 +250,13 @@ function Field({
   required?: boolean;
 }) {
   return (
-    <label className="block text-xs tracking-[0.14em] text-muted uppercase">
+    <label className="eyebrow block text-muted">
       {label}
       <input
         name={name}
         type={type}
         required={required}
-        className="mt-2 h-11 w-full border border-line bg-transparent px-3 text-sm normal-case tracking-normal text-ink outline-none focus:border-ink"
+        className="mt-2 h-11 w-full border border-line bg-transparent px-3 text-base normal-case tracking-normal text-ink outline-none transition focus:border-ink"
       />
     </label>
   );

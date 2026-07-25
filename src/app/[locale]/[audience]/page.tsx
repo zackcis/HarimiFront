@@ -4,14 +4,17 @@ import { BrandStrip } from '@/components/home/BrandStrip';
 import { EditorialBreak } from '@/components/home/EditorialBreak';
 import { ExploreCategories } from '@/components/home/ExploreCategories';
 import { HomeHero } from '@/components/home/HomeHero';
+import { InstagramBand } from '@/components/home/InstagramBand';
+import { NewArrivalsBand } from '@/components/home/NewArrivalsBand';
 import { OppositeGenderBand } from '@/components/home/OppositeGenderBand';
+import { SpecialOffersBand } from '@/components/home/SpecialOffersBand';
 import { ProductRail } from '@/components/ProductRail';
-import { fetchBrands, fetchCategories, fetchMerchandising } from '@/lib/api';
+import { fetchBrands, fetchCategories, fetchMerchandising, fetchSiteMedia, EMPTY_SITE_MEDIA_SLOT, instagramCollageFromSlot } from '@/lib/api';
 import { audienceLabel, isAudience, isLocale } from '@/lib/i18n';
-import { homeHeroMediaPath, mediaExists, welcomeMediaPath } from '@/lib/media';
-import { otherAudiences, offersHref, shopHref } from '@/lib/nav';
+import { homeHeroMediaPath, preferMedia, welcomeMediaPath } from '@/lib/media';
+import { otherAudiences, shopHref } from '@/lib/nav';
 import { pageMetadata } from '@/lib/seo';
-import type { Audience, CategoryNode, Locale } from '@/lib/types';
+import type { Audience, CategoryNode, Locale, ProductCard } from '@/lib/types';
 
 export async function generateMetadata({
   params,
@@ -51,17 +54,30 @@ export default async function AudienceHomePage({
   const others = otherAudiences(audience);
   const it = locale === 'it';
 
-  let merch: Record<string, Awaited<ReturnType<typeof fetchMerchandising>>[string]> = {};
+  let merch: Record<string, ProductCard[]> = {};
+  let titles: Record<string, string> = {};
   let brands: Awaited<ReturnType<typeof fetchBrands>> = [];
   let categories: CategoryNode[] = [];
+  let siteMedia: Awaited<ReturnType<typeof fetchSiteMedia>> = {
+    women: { ...EMPTY_SITE_MEDIA_SLOT },
+    men: { ...EMPTY_SITE_MEDIA_SLOT },
+    kids: { ...EMPTY_SITE_MEDIA_SLOT },
+  };
   try {
-    [merch, brands, categories] = await Promise.all([
+    const [merchResult, brandList, categoryList, media] = await Promise.all([
       fetchMerchandising(locale),
       fetchBrands(locale),
       fetchCategories(locale),
+      fetchSiteMedia(locale),
     ]);
+    merch = merchResult.shelves;
+    titles = merchResult.titles;
+    brands = brandList;
+    categories = categoryList;
+    siteMedia = media;
   } catch {
     merch = {};
+    titles = {};
     brands = [];
     categories = [];
   }
@@ -73,21 +89,16 @@ export default async function AudienceHomePage({
     merch.best_sellers?.[0]?.primary_image_url ??
     null;
 
+  const audienceMedia = siteMedia[audience];
+
   const discoverWorlds = await Promise.all(
     others.map(async (other) => {
-      const heroJpg = homeHeroMediaPath(other);
-      const welcomeJpg = welcomeMediaPath(other);
-      const [hasHero, hasWelcome] = await Promise.all([
-        mediaExists(heroJpg),
-        mediaExists(welcomeJpg),
-      ]);
-      const categoryImage =
-        categories.find((c) => c.slug === other)?.image_url ?? null;
-      const image = hasHero
-        ? heroJpg
-        : hasWelcome
-          ? welcomeJpg
-          : categoryImage;
+      const otherMedia = siteMedia[other];
+      const image =
+        (await preferMedia(otherMedia.home_still, homeHeroMediaPath(other))) ??
+        (await preferMedia(otherMedia.welcome, welcomeMediaPath(other))) ??
+        categories.find((c) => c.slug === other)?.image_url ??
+        null;
       return {
         audience: other,
         label: audienceLabel(other, locale),
@@ -99,22 +110,42 @@ export default async function AudienceHomePage({
 
   return (
       <main>
-        <HomeHero locale={locale} audience={audience} fallbackImage={heroFallback} />
+        <HomeHero
+          locale={locale}
+          audience={audience}
+          fallbackImage={heroFallback}
+          apiStill={audienceMedia.home_still}
+          apiMp4={audienceMedia.home_video_mp4}
+          apiWebm={audienceMedia.home_video_webm}
+        />
 
         <ProductRail
-          title={it ? 'Best seller' : 'Best sellers'}
+          title={titles.best_sellers ?? (it ? 'Best seller' : 'Best sellers')}
           products={merch.best_sellers ?? []}
           locale={locale}
           href={shopHref(locale, audience, { shelf: 'best_sellers' })}
           cta={it ? 'Vedi tutti' : 'View all'}
+          layout="carousel"
         />
-
-        <OppositeGenderBand locale={locale} worlds={discoverWorlds} />
 
         <ExploreCategories
           locale={locale}
           audience={audience}
           categories={exploreCats}
+        />
+
+        <SpecialOffersBand
+          locale={locale}
+          audience={audience}
+          products={merch.special_offers ?? []}
+        />
+
+        <NewArrivalsBand
+          locale={locale}
+          audience={audience}
+          title={titles.new_arrivals ?? (it ? 'Novità' : 'New arrivals')}
+          products={merch.new_arrivals ?? []}
+          lifestyleImage={audienceMedia.new_arrivals_still}
         />
 
         <EditorialBreak
@@ -123,15 +154,19 @@ export default async function AudienceHomePage({
           products={merch.featured ?? []}
         />
 
-        <ProductRail
-          title={it ? 'Offerte speciali' : 'Special offers'}
-          products={merch.special_offers ?? []}
-          locale={locale}
-          href={offersHref(locale, audience)}
-          cta={it ? 'Vedi offerte' : 'View offers'}
-        />
+        <OppositeGenderBand locale={locale} worlds={discoverWorlds} />
 
         <BrandStrip locale={locale} brands={brands} />
+
+        <InstagramBand
+          locale={locale}
+          collageImages={instagramCollageFromSlot(audienceMedia)}
+          products={[
+            ...(merch.featured ?? []),
+            ...(merch.best_sellers ?? []),
+            ...(merch.new_arrivals ?? []),
+          ]}
+        />
       </main>
   );
 }

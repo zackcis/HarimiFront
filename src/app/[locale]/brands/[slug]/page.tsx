@@ -7,7 +7,7 @@ import { ProductRail } from '@/components/ProductRail';
 import { fetchBrand, fetchProducts } from '@/lib/api';
 import { brandEditorial } from '@/lib/editorial';
 import { isLocale } from '@/lib/i18n';
-import { brandMediaPath, mediaExists } from '@/lib/media';
+import { brandMediaPath, preferMedia } from '@/lib/media';
 import { pageMetadata } from '@/lib/seo';
 import type { Locale, ProductCard } from '@/lib/types';
 
@@ -57,8 +57,7 @@ export default async function BrandLandingPage({
   }
 
   const copy = brandEditorial(brand.slug, brand.name, locale);
-  const mediaPath = brandMediaPath(brand.slug);
-  const hasMedia = await mediaExists(mediaPath);
+  const heroImage = await preferMedia(brand.hero_url, brandMediaPath(brand.slug));
 
   let products: ProductCard[] = [];
   try {
@@ -79,17 +78,17 @@ export default async function BrandLandingPage({
   return (
     <main>
       <section className="relative overflow-hidden bg-ink text-ivory">
-        {hasMedia ? (
+        {heroImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={mediaPath}
+            src={heroImage}
             alt=""
             className="absolute inset-0 h-full w-full object-cover opacity-40 hero-media"
           />
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/70 to-ink/50" />
         <div className="container-wide relative z-10 flex min-h-[52vh] flex-col justify-end pb-14 pt-28 md:min-h-[58vh] md:pb-20">
-          <p className="text-[11px] tracking-[0.28em] uppercase text-ivory/55 hero-reveal">
+          <p className="eyebrow text-ivory/55 hero-reveal">
             {it ? 'Marchio' : 'Brand'}
           </p>
           {brand.logo_url ? (
@@ -100,7 +99,7 @@ export default async function BrandLandingPage({
               className="mt-6 h-10 w-auto max-w-[200px] object-contain brightness-0 invert hero-reveal hero-reveal-delay-1"
             />
           ) : (
-            <h1 className="mt-5 font-serif text-5xl md:text-7xl hero-reveal hero-reveal-delay-1">
+            <h1 className="hero-title mt-5 font-serif hero-reveal hero-reveal-delay-1">
               {brand.name}
             </h1>
           )}
@@ -118,7 +117,7 @@ export default async function BrandLandingPage({
           <div className="page-enter max-w-2xl">
             <p className="text-base leading-relaxed text-muted md:text-lg">{copy.body}</p>
             {brand.products_count > 0 ? (
-              <p className="mt-6 text-[11px] tracking-[0.18em] uppercase text-muted">
+              <p className="eyebrow mt-6 text-muted">
                 {brand.products_count}{' '}
                 {it
                   ? brand.products_count === 1
@@ -132,7 +131,7 @@ export default async function BrandLandingPage({
           </div>
           <Link
             href={`/${locale}/brands`}
-            className="text-[11px] tracking-[0.18em] uppercase underline underline-offset-4 page-enter"
+            className="eyebrow inline-flex min-h-11 items-center underline underline-offset-4 page-enter"
           >
             {it ? 'Tutti i marchi' : 'All brands'}
           </Link>

@@ -1,8 +1,8 @@
 import type { Audience } from '@/lib/types';
 
 /**
- * Dedicated media slots under /public/media.
- * Missing files fall back to API imagery or cinematic gradients.
+ * Local fallback slots under /public/media.
+ * Prefer API site-media / hero_url when present.
  */
 export function welcomeMediaPath(audience: Audience): string {
   return `/media/welcome-${audience}.jpg`;
@@ -43,4 +43,15 @@ export async function mediaExists(path: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** API URL → local file → null */
+export async function preferMedia(
+  apiUrl: string | null | undefined,
+  localPath: string,
+): Promise<string | null> {
+  if (apiUrl) {
+    return apiUrl;
+  }
+  return (await mediaExists(localPath)) ? localPath : null;
 }

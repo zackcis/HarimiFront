@@ -351,3 +351,124 @@ export function brandEditorial(slug: string, name: string, locale: Locale): Edit
   if (entry) return entry[locale];
   return fallbackBrand(name, locale);
 }
+
+export type FaqItem = { q: string; a: string };
+
+const CATEGORY_FAQ: Record<string, { it: FaqItem[]; en: FaqItem[] }> = {
+  bras: {
+    it: [
+      {
+        q: 'Come scelgo la taglia giusta di reggiseno?',
+        a: 'Misura sottoseno e seno, poi consulta la guida alle taglie presente su ogni scheda prodotto. In caso di dubbio tra due taglie, scegli la coppa più grande e il giro più aderente.',
+      },
+      {
+        q: 'Qual è la differenza tra balconcino e push-up?',
+        a: 'Il balconcino solleva e distribuisce il seno con una scollatura orizzontale, ideale sotto scolli ampi. Il push-up aggiunge volume grazie a imbottiture graduate.',
+      },
+      {
+        q: 'Come lavo i miei reggiseni?',
+        a: 'Consigliamo il lavaggio a mano o in rete a 30°, senza candeggina né asciugatrice. Le indicazioni precise sono nelle note di cura di ogni prodotto.',
+      },
+      {
+        q: 'Posso restituire un reggiseno?',
+        a: 'Sì: hai 30 giorni per il reso, purché il capo sia integro con etichette. Trovi tutti i dettagli nella pagina spedizioni e resi.',
+      },
+    ],
+    en: [
+      {
+        q: 'How do I choose the right bra size?',
+        a: 'Measure underbust and bust, then check the size guide on each product page. If you sit between two sizes, choose the larger cup and the snugger band.',
+      },
+      {
+        q: 'What is the difference between balconette and push-up?',
+        a: 'A balconette lifts and spreads the bust with a horizontal neckline, ideal under wide necklines. A push-up adds volume through graduated padding.',
+      },
+      {
+        q: 'How should I wash my bras?',
+        a: 'We recommend hand washing or a laundry net at 30°C, no bleach and no tumble drying. Exact instructions are in each product’s care notes.',
+      },
+      {
+        q: 'Can I return a bra?',
+        a: 'Yes: you have 30 days to return, provided the piece is unworn with labels attached. Full details are on the shipping and returns page.',
+      },
+    ],
+  },
+  knickers: {
+    it: [
+      {
+        q: 'Come scelgo la taglia degli slip?',
+        a: 'Fai riferimento alla tabella taglie sulla scheda prodotto: misura fianchi e vita e confrontala con la guida. La vestibilità è regolare su tutta la selezione.',
+      },
+      {
+        q: 'Quali materiali sono disponibili?',
+        a: 'Cotone per l’uso quotidiano, microfibra invisibile sotto i capi aderenti, pizzo per le occasioni. Ogni scheda indica la composizione completa.',
+      },
+      {
+        q: 'Posso restituire l’intimo?',
+        a: 'Per ragioni igieniche accettiamo il reso solo su capi integri con etichette e sigillo. Hai 30 giorni dalla consegna.',
+      },
+    ],
+    en: [
+      {
+        q: 'How do I choose my knicker size?',
+        a: 'Use the size table on the product page: measure hips and waist and match them to the guide. Fit is true to size across the selection.',
+      },
+      {
+        q: 'Which fabrics are available?',
+        a: 'Cotton for the everyday, invisible microfibre under close-fitting clothes, lace for occasions. Each product page lists the full composition.',
+      },
+      {
+        q: 'Can I return underwear?',
+        a: 'For hygiene reasons we accept returns only on unworn pieces with labels and seal intact. You have 30 days from delivery.',
+      },
+    ],
+  },
+};
+
+function fallbackFaq(name: string, locale: Locale): FaqItem[] {
+  const lower = name.toLowerCase();
+  if (locale === 'it') {
+    return [
+      {
+        q: `Come scelgo la taglia giusta di ${lower}?`,
+        a: 'Ogni scheda prodotto include una guida alle taglie dettagliata con le misure in centimetri. In caso di dubbio, il nostro servizio clienti è a disposizione.',
+      },
+      {
+        q: `Quali materiali usate per ${lower}?`,
+        a: 'Selezioniamo tessuti di qualità — cotone, microfibra, pizzo e seta a seconda del capo. La composizione completa è indicata su ogni scheda prodotto.',
+      },
+      {
+        q: 'Quanto costa la spedizione e in quanto arriva?',
+        a: 'La spedizione standard arriva in 2–4 giorni lavorativi. Il costo esatto viene calcolato al checkout prima del pagamento.',
+      },
+      {
+        q: 'Posso effettuare un reso?',
+        a: 'Sì: hai 30 giorni per il reso, purché il capo sia integro con etichette. Trovi tutti i dettagli nella pagina spedizioni e resi.',
+      },
+    ];
+  }
+  return [
+    {
+      q: `How do I choose the right size of ${lower}?`,
+      a: 'Each product page includes a detailed size guide with measurements in centimetres. If in doubt, our customer care team is happy to help.',
+    },
+    {
+      q: `Which fabrics do you use for ${lower}?`,
+      a: 'We select quality fabrics — cotton, microfibre, lace and silk depending on the piece. The full composition is listed on every product page.',
+    },
+    {
+      q: 'How much is shipping and how long does it take?',
+      a: 'Standard shipping arrives in 2–4 working days. The exact cost is calculated at checkout before payment.',
+    },
+    {
+      q: 'Can I make a return?',
+      a: 'Yes: you have 30 days to return, provided the piece is unworn with labels attached. Full details are on the shipping and returns page.',
+    },
+  ];
+}
+
+export function categoryFaq(slug: string, name: string, locale: Locale): FaqItem[] {
+  const entry = CATEGORY_FAQ[slug];
+  if (entry) return entry[locale];
+  return fallbackFaq(name, locale);
+}

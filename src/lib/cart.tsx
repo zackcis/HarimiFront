@@ -26,6 +26,8 @@ export type CartLine = {
 type CartContextValue = {
   lines: CartLine[];
   count: number;
+  /** True after the first localStorage hydrate — wait before clear-on-paid. */
+  ready: boolean;
   addItem: (line: Omit<CartLine, 'quantity'>, quantity?: number) => void;
   updateQty: (variantId: number, quantity: number) => void;
   removeItem: (variantId: number) => void;
@@ -34,6 +36,14 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = 'harimi.cart.v1';
+
+function writeStorage(lines: CartLine[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
+  } catch {
+    // private mode / quota — ignore
+  }
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
@@ -56,7 +66,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
+    writeStorage(lines);
   }, [lines, ready]);
 
   const addItem = useCallback((line: Omit<CartLine, 'quantity'>, quantity = 1) => {
@@ -85,18 +95,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setLines((prev) => prev.filter((l) => l.variantId !== variantId));
   }, []);
 
-  const clear = useCallback(() => setLines([]), []);
+  const clear = useCallback(() => {
+    setLines([]);
+    // Persist immediately so a late hydrate (or remount) cannot resurrect the bag.
+    writeStorage([]);
+  }, []);
 
   const value = useMemo(
     () => ({
       lines,
       count: lines.reduce((sum, l) => sum + l.quantity, 0),
+      ready,
       addItem,
       updateQty,
       removeItem,
       clear,
     }),
-    [lines, addItem, updateQty, removeItem, clear],
+    [lines, ready, addItem, updateQty, removeItem, clear],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

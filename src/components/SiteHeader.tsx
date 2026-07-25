@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { useCart } from '@/lib/cart';
 import { audienceLabel } from '@/lib/i18n';
 import {
   categoryLandingHref,
+  categoryShopHref,
   navCopy,
   offersHref,
   shopHref,
@@ -14,6 +16,11 @@ import {
 import type { Audience, Brand, CategoryNode, Locale } from '@/lib/types';
 
 type Panel = 'women' | 'men' | 'brands' | 'search' | 'mobile' | null;
+
+type DrawerFrame =
+  | { kind: 'root' }
+  | { kind: 'audience'; audience: Audience; root: CategoryNode; label: string }
+  | { kind: 'category'; audience: Audience; node: CategoryNode };
 
 const WOMEN_ORDER = ['bras', 'knickers', 'lingerie', 'knitwear', 'nightwear'];
 const MEN_ORDER = ['boxers', 'briefs', 'tops', 'easywear', 'socks', 'swimsuits'];
@@ -34,10 +41,13 @@ function sortChildren(audience: Audience, children: CategoryNode[]): CategoryNod
   });
 }
 
-function audienceFromPath(pathname: string): Audience {
-  if (pathname.includes('/kids')) return 'kids';
-  if (pathname.includes('/men')) return 'men';
-  return 'women';
+/** Locale segment is parts[0]; audience lives at parts[1] on shop/home routes. */
+function audienceFromPath(pathname: string): Audience | null {
+  const segment = pathname.split('/').filter(Boolean)[1];
+  if (segment === 'kids' || segment === 'men' || segment === 'women') {
+    return segment;
+  }
+  return null;
 }
 
 export function SiteHeader({
@@ -52,7 +62,9 @@ export function SiteHeader({
   brands: Brand[];
 }) {
   const pathname = usePathname() || '';
-  const audience = audienceProp ?? audienceFromPath(pathname);
+  // Prefer URL path so search/offers stay on kids/men when browsing those worlds.
+  // Locale layout used to always pass audience="women", which hid pathname.
+  const audience = audienceFromPath(pathname) ?? audienceProp ?? 'women';
   const { count } = useCart();
   const copy = navCopy(locale);
   const [panel, setPanel] = useState<Panel>(null);
@@ -113,68 +125,70 @@ export function SiteHeader({
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-ivory/95 backdrop-blur-md">
-      <div className="container-wide flex h-[var(--header-h)] items-center justify-between gap-4">
-        <button
-          type="button"
-          className="text-[11px] tracking-[0.18em] uppercase text-muted md:hidden"
-          onClick={() => open(panel === 'mobile' ? null : 'mobile')}
-          aria-expanded={panel === 'mobile'}
-        >
-          {copy.menu}
-        </button>
+      <div className="container-wide grid h-[var(--header-h)] grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <div className="flex items-center">
+          <button
+            type="button"
+          className="eyebrow tap -ml-2 inline-flex items-center justify-center px-2 text-muted transition-colors duration-(--dur-fast) hover:text-ink md:hidden"
+            onClick={() => open(panel === 'mobile' ? null : 'mobile')}
+            aria-expanded={panel === 'mobile'}
+          >
+            {copy.menu}
+          </button>
 
-        <nav
-          className="hidden items-center gap-7 md:flex"
-          onMouseLeave={scheduleClose}
-          onMouseEnter={cancelClose}
-        >
-          <NavTrigger
-            label={copy.women}
-            active={panel === 'women'}
-            onEnter={() => open('women')}
-            href={`/${locale}/women`}
-          />
-          <NavTrigger
-            label={copy.men}
-            active={panel === 'men'}
-            onEnter={() => open('men')}
-            href={`/${locale}/men`}
-          />
-          <Link
-            href={`/${locale}/kids`}
-            className="nav-link-underline text-[11px] tracking-[0.18em] uppercase text-ink"
-            onMouseEnter={close}
+          <nav
+            className="hidden items-center gap-5 md:flex lg:gap-7"
+            onMouseLeave={scheduleClose}
+            onMouseEnter={cancelClose}
           >
-            {copy.kids}
-          </Link>
-          <NavTrigger
-            label={copy.brands}
-            active={panel === 'brands'}
-            onEnter={() => open('brands')}
-            href={`/${locale}/brands`}
-          />
-          <Link
-            href={offersHref(locale, audience)}
-            className="nav-link-underline text-[11px] tracking-[0.18em] uppercase text-ink"
-            onMouseEnter={close}
-          >
-            {copy.offers}
-          </Link>
-        </nav>
+            <NavTrigger
+              label={copy.women}
+              active={panel === 'women'}
+              onEnter={() => open('women')}
+              href={`/${locale}/women`}
+            />
+            <NavTrigger
+              label={copy.men}
+              active={panel === 'men'}
+              onEnter={() => open('men')}
+              href={`/${locale}/men`}
+            />
+            <Link
+              href={`/${locale}/kids`}
+              className="nav-link-underline eyebrow text-ink"
+              onMouseEnter={close}
+            >
+              {copy.kids}
+            </Link>
+            <NavTrigger
+              label={copy.brands}
+              active={panel === 'brands'}
+              onEnter={() => open('brands')}
+              href={`/${locale}/brands`}
+            />
+            <Link
+              href={offersHref(locale, audience)}
+              className="nav-link-underline eyebrow text-ink"
+              onMouseEnter={close}
+            >
+              {copy.offers}
+            </Link>
+          </nav>
+        </div>
 
         <Link
           href={`/${locale}/${audience}`}
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center"
+          className="justify-self-center text-center"
           onMouseEnter={close}
         >
           <span className="harimi-mark text-sm md:text-base">HARIMI</span>
           <span className="harimi-rule mx-auto" />
         </Link>
 
-        <div className="flex items-center gap-5 text-[11px] tracking-[0.18em] uppercase">
+        <div className="flex items-center justify-end gap-1 sm:gap-2">
           <button
             type="button"
-            className="hidden text-muted transition hover:text-ink md:inline"
+            className="eyebrow tap hidden items-center justify-center px-2 text-muted transition hover:text-ink md:inline-flex"
             onClick={() => open(panel === 'search' ? null : 'search')}
             aria-expanded={panel === 'search'}
           >
@@ -182,11 +196,14 @@ export function SiteHeader({
           </button>
           <Link
             href={`/${otherLocale}/${audience}`}
-            className="text-muted transition hover:text-ink"
+            className="eyebrow tap inline-flex items-center justify-center px-2 text-muted transition hover:text-ink"
           >
             {otherLocale.toUpperCase()}
           </Link>
-          <Link href={`/${locale}/cart`} className="transition hover:text-muted">
+          <Link
+            href={`/${locale}/cart`}
+            className="eyebrow tap inline-flex items-center justify-center px-2 transition hover:text-muted"
+          >
             {copy.bag}
             {count > 0 ? ` (${count})` : ''}
           </Link>
@@ -195,9 +212,11 @@ export function SiteHeader({
 
       {panel === 'women' || panel === 'men' ? (
         <MegaCategoryPanel
+          key={panel}
           locale={locale}
           audience={panel}
           root={panel === 'women' ? womenRoot : menRoot}
+          copy={copy}
           onClose={close}
           onHoverEnter={cancelClose}
           onHoverLeave={scheduleClose}
@@ -210,26 +229,36 @@ export function SiteHeader({
           onMouseEnter={cancelClose}
           onMouseLeave={scheduleClose}
         >
-          <div className="container-wide grid gap-8 py-10 md:grid-cols-[1fr_auto]">
-            <div className="grid grid-cols-2 gap-x-8 gap-y-4 md:grid-cols-4">
-              {brands.slice(0, 12).map((brand) => (
-                <Link
-                  key={brand.id}
-                  href={`/${locale}/brands/${brand.slug}`}
-                  className="text-sm tracking-[0.08em] transition hover:text-muted"
-                  onClick={close}
-                >
-                  {brand.name}
-                </Link>
-              ))}
+          <div className="container-wide grid gap-10 py-12 md:grid-cols-[1.2fr_0.8fr]">
+            <div>
+              <p className="eyebrow text-muted">{copy.brands}</p>
+              <div className="mt-8 grid grid-cols-2 gap-x-10 gap-y-4 md:grid-cols-3">
+                {brands.slice(0, 12).map((brand) => (
+                  <Link
+                    key={brand.id}
+                    href={`/${locale}/brands/${brand.slug}`}
+                    className="nav-link-underline w-fit text-sm tracking-[0.06em]"
+                    onClick={close}
+                  >
+                    {brand.name}
+                  </Link>
+                ))}
+              </div>
+              <Link
+                href={`/${locale}/brands`}
+                className="eyebrow mt-10 inline-flex items-center underline underline-offset-4"
+                onClick={close}
+              >
+                {copy.allBrands}
+              </Link>
             </div>
-            <Link
-              href={`/${locale}/brands`}
-              className="self-end text-[11px] tracking-[0.18em] uppercase underline"
-              onClick={close}
-            >
-              {copy.allBrands}
-            </Link>
+            <div className="hidden min-h-[220px] items-center justify-center bg-ivory-2 px-8 text-center md:flex">
+              <p className="font-serif text-3xl text-ink/80">
+                {locale === 'it'
+                  ? 'I marchi che amiamo, in un solo posto.'
+                  : 'The brands we love, in one place.'}
+              </p>
+            </div>
           </div>
         </div>
       ) : null}
@@ -295,9 +324,8 @@ function NavTrigger({
   return (
     <Link
       href={href}
-      className={`nav-link-underline text-[11px] tracking-[0.18em] uppercase ${
-        active ? 'text-ink' : 'text-ink'
-      }`}
+      aria-current={active ? 'true' : undefined}
+      className="nav-link-underline eyebrow text-ink"
       onMouseEnter={onEnter}
       onFocus={onEnter}
     >
@@ -310,6 +338,7 @@ function MegaCategoryPanel({
   locale,
   audience,
   root,
+  copy,
   onClose,
   onHoverEnter,
   onHoverLeave,
@@ -317,11 +346,16 @@ function MegaCategoryPanel({
   locale: Locale;
   audience: Audience;
   root?: CategoryNode;
+  copy: ReturnType<typeof navCopy>;
   onClose: () => void;
   onHoverEnter?: () => void;
   onHoverLeave?: () => void;
 }) {
-  const children = sortChildren(audience, root?.children ?? []);
+  const parents = sortChildren(audience, root?.children ?? []);
+  const [activeId, setActiveId] = useState<number | null>(() => parents[0]?.id ?? null);
+  const activeParent = parents.find((p) => p.id === activeId) ?? parents[0] ?? null;
+  const subtypes = activeParent?.children ?? [];
+  const featuredUrl = activeParent?.image_url || root?.image_url;
 
   return (
     <div
@@ -329,37 +363,98 @@ function MegaCategoryPanel({
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
     >
-      <div className="container-wide grid gap-10 py-12 md:grid-cols-[1.2fr_0.8fr]">
-        <div>
-          <p className="text-[11px] tracking-[0.22em] text-muted uppercase">
-            {audienceLabel(audience, locale)}
-          </p>
-          <div className="mt-8 grid grid-cols-2 gap-x-10 gap-y-5 md:grid-cols-3">
-            {children.map((child) => (
-              <Link
-                key={child.id}
-                href={categoryLandingHref(locale, audience, child.slug)}
-                className="font-serif text-2xl transition hover:text-muted"
-                onClick={onClose}
-              >
-                {child.name}
-              </Link>
-            ))}
-          </div>
+      <div className="container-wide grid md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,0.95fr)]">
+        {/* Col 1 — parent categories */}
+        <div className="border-line py-10 md:border-r md:pr-8 md:py-12">
+          <p className="eyebrow text-muted">{audienceLabel(audience, locale)}</p>
+          <ul className="mt-6 max-h-[min(58vh,420px)] space-y-1 overflow-y-auto">
+            {parents.map((parent) => {
+              const active = parent.id === activeParent?.id;
+              return (
+                <li key={parent.id}>
+                  <button
+                    type="button"
+                    className={`flex w-full cursor-pointer items-center justify-between gap-3 py-2.5 text-left font-serif text-xl transition md:text-2xl ${
+                      active ? 'text-ink' : 'text-ink/55 hover:text-ink'
+                    }`}
+                    onMouseEnter={() => setActiveId(parent.id)}
+                    onFocus={() => setActiveId(parent.id)}
+                  >
+                    <span>{parent.name}</span>
+                    {active ? (
+                      <span aria-hidden className="text-sm text-muted">
+                        →
+                      </span>
+                    ) : null}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
           <Link
             href={shopHref(locale, audience, { category: root?.slug })}
-            className="mt-10 inline-block text-[11px] tracking-[0.18em] uppercase underline"
+            className="eyebrow mt-8 inline-flex items-center underline underline-offset-4"
             onClick={onClose}
           >
-            {locale === 'it' ? 'Vedi tutto' : 'Shop all'}
+            {copy.shopAll}
           </Link>
         </div>
-        <div className="relative hidden min-h-[220px] overflow-hidden bg-ivory-2 md:block">
-          {root?.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={root.image_url} alt="" className="h-full w-full object-cover" />
+
+        {/* Col 2 — subtypes for hovered parent */}
+        <div className="border-line py-10 md:border-r md:px-8 md:py-12">
+          {activeParent ? (
+            <>
+              <p className="eyebrow text-muted">{copy.type}</p>
+              <ul className="mt-6 max-h-[min(58vh,420px)] space-y-3 overflow-y-auto">
+                <li>
+                  <Link
+                    href={categoryShopHref(locale, audience, activeParent.slug)}
+                    className="block text-sm tracking-[0.04em] text-ink transition hover:text-muted"
+                    onClick={onClose}
+                  >
+                    {copy.viewAll}
+                  </Link>
+                </li>
+                {subtypes.map((child) => (
+                  <li key={child.id}>
+                    <Link
+                      href={categoryShopHref(locale, audience, child.slug)}
+                      className="block text-sm tracking-[0.04em] text-ink/80 transition hover:text-ink"
+                      onClick={onClose}
+                    >
+                      {child.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </div>
+
+        {/* Col 3 — featured visual */}
+        <div className="hidden py-10 pl-8 md:block md:py-12">
+          {activeParent ? (
+            <Link
+              href={categoryShopHref(locale, audience, activeParent.slug)}
+              className="group relative flex min-h-[260px] flex-col justify-end overflow-hidden bg-ivory-2"
+              onClick={onClose}
+            >
+              {featuredUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={featuredUrl}
+                  alt=""
+                  className="img-zoom absolute inset-0 h-full w-full object-cover object-[center_18%]"
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/75 via-ink/20 to-transparent" />
+              <span className="relative z-10 flex items-center justify-between gap-3 p-5 font-serif text-2xl text-ivory">
+                {activeParent.name}
+                <span aria-hidden>→</span>
+              </span>
+            </Link>
           ) : (
-            <div className="flex h-full items-center justify-center px-8 text-center">
+            <div className="flex min-h-[260px] items-center justify-center bg-ivory-2 px-8 text-center">
               <p className="font-serif text-3xl text-ink/80">
                 {locale === 'it'
                   ? 'Selezione curata, ogni giorno.'
@@ -393,110 +488,250 @@ function MobileDrawer({
   onSearch: (q: string) => void;
 }) {
   const [q, setQ] = useState('');
-  const [openAudience, setOpenAudience] = useState<Audience | null>(audience);
+  const [stack, setStack] = useState<DrawerFrame[]>([{ kind: 'root' }]);
+  const [mounted, setMounted] = useState(false);
 
-  return (
-    <div className="fixed inset-0 z-50 bg-ivory md:hidden">
-      <div className="flex h-[var(--header-h)] items-center justify-between border-b border-line px-5">
-        <span className="harimi-mark text-sm">HARIMI</span>
-        <button type="button" className="text-[11px] tracking-[0.18em] uppercase" onClick={onClose}>
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  const depth = stack.length - 1;
+  const current = stack[stack.length - 1];
+
+  const title =
+    current.kind === 'root'
+      ? 'HARIMI'
+      : current.kind === 'audience'
+        ? current.label
+        : current.node.name;
+
+  const push = (frame: DrawerFrame) => setStack((s) => [...s, frame]);
+  const back = () => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
+
+  const openAudience = (key: Audience, root: CategoryNode | undefined, label: string) => {
+    if (!root?.children?.length) {
+      window.location.href = `/${locale}/${key}`;
+      return;
+    }
+    push({ kind: 'audience', audience: key, root, label });
+  };
+
+  const openCategory = (aud: Audience, node: CategoryNode) => {
+    if (node.children?.length) {
+      push({ kind: 'category', audience: aud, node });
+      return;
+    }
+    window.location.href = categoryLandingHref(locale, aud, node.slug);
+  };
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={copy.menu}
+      className="fixed inset-0 z-100 flex flex-col bg-ivory text-ink md:hidden"
+    >
+      <div className="relative flex h-(--header-h) shrink-0 items-center justify-center border-b border-line bg-ivory px-5">
+        {depth > 0 ? (
+          <button
+            type="button"
+            className="eyebrow tap absolute left-3 inline-flex cursor-pointer items-center justify-center px-2"
+            onClick={back}
+            aria-label={copy.back}
+          >
+            ←
+          </button>
+        ) : (
+          <span className="harimi-mark absolute left-5 text-sm">HARIMI</span>
+        )}
+        <span className={depth > 0 ? 'font-serif text-lg' : 'sr-only'}>{title}</span>
+        <button
+          type="button"
+          className="eyebrow tap absolute right-3 inline-flex items-center justify-center px-2"
+          onClick={onClose}
+        >
           {copy.close}
         </button>
       </div>
-      <div className="max-h-[calc(100vh-var(--header-h))] overflow-y-auto px-5 py-8">
-        <form
-          className="mb-10 flex gap-2 border-b border-ink pb-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSearch(q.trim());
-          }}
-        >
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={copy.searchPlaceholder}
-            className="flex-1 bg-transparent text-sm outline-none"
-          />
-          <button type="submit" className="text-[11px] tracking-[0.16em] uppercase">
-            {copy.search}
-          </button>
-        </form>
 
-        {([
-          ['women', womenRoot, copy.women],
-          ['men', menRoot, copy.men],
-        ] as const).map(([key, root, label]) => (
-          <div key={key} className="border-b border-line py-4">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between font-serif text-3xl"
-              onClick={() => setOpenAudience(openAudience === key ? null : key)}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <div
+          className="drawer-track"
+          style={{ transform: `translateX(-${depth * 100}%)` }}
+        >
+          {/* Root */}
+          <div className="drawer-pane px-5 py-8">
+            <form
+              className="mb-10 flex gap-2 border-b border-ink pb-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                onSearch(q.trim());
+              }}
             >
-              {label}
-              <span className="text-sm text-muted">{openAudience === key ? '−' : '+'}</span>
-            </button>
-            {openAudience === key ? (
-              <ul className="mt-4 space-y-3 pb-2">
-                {(root?.children
-                  ? sortChildren(key, root.children)
-                  : []
-                ).map((child) => (
-                  <li key={child.id}>
-                    <Link
-                      href={categoryLandingHref(locale, key, child.slug)}
-                      className="text-sm text-muted"
-                      onClick={onClose}
-                    >
-                      {child.name}
-                    </Link>
-                  </li>
-                ))}
-                <li>
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder={copy.searchPlaceholder}
+                className="h-11 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted"
+              />
+              <button type="submit" className="eyebrow tap inline-flex items-center px-2">
+                {copy.search}
+              </button>
+            </form>
+
+            <div className="space-y-1 border-b border-line pb-4">
+              <button
+                type="button"
+                className="flex w-full cursor-pointer items-center justify-between py-3 font-serif text-3xl"
+                onClick={() => openAudience('women', womenRoot, copy.women)}
+              >
+                {copy.women}
+                <span aria-hidden className="text-sm text-muted">
+                  →
+                </span>
+              </button>
+              <button
+                type="button"
+                className="flex w-full cursor-pointer items-center justify-between py-3 font-serif text-3xl"
+                onClick={() => openAudience('men', menRoot, copy.men)}
+              >
+                {copy.men}
+                <span aria-hidden className="text-sm text-muted">
+                  →
+                </span>
+              </button>
+            </div>
+
+            <div className="space-y-4 py-6">
+              <Link href={`/${locale}/kids`} className="block font-serif text-2xl" onClick={onClose}>
+                {copy.kids}
+              </Link>
+              <Link href={`/${locale}/brands`} className="block font-serif text-2xl" onClick={onClose}>
+                {copy.brands}
+              </Link>
+              <Link
+                href={offersHref(locale, audience)}
+                className="block font-serif text-2xl"
+                onClick={onClose}
+              >
+                {copy.offers}
+              </Link>
+              <Link href={`/${locale}/cart`} className="block font-serif text-2xl" onClick={onClose}>
+                {copy.bag}
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-4">
+              {brands.slice(0, 6).map((b) => (
+                <Link
+                  key={b.id}
+                  href={`/${locale}/brands/${b.slug}`}
+                  className="border border-line px-3 py-4 text-center text-[11px] tracking-[0.14em] uppercase"
+                  onClick={onClose}
+                >
+                  {b.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Audience + category panes — render stacked frames after root */}
+          {stack.slice(1).map((frame, i) => {
+            if (frame.kind === 'audience') {
+              const kids = sortChildren(frame.audience, frame.root.children ?? []);
+              return (
+                <div key={`aud-${frame.audience}-${i}`} className="drawer-pane px-5 py-8">
+                  <ul className="space-y-1">
+                    {kids.map((child) => {
+                      const hasKids = Boolean(child.children?.length);
+                      if (hasKids) {
+                        return (
+                          <li key={child.id}>
+                            <button
+                              type="button"
+                              className="flex w-full cursor-pointer items-center justify-between border-b border-line py-4 text-left font-serif text-2xl"
+                              onClick={() => openCategory(frame.audience, child)}
+                            >
+                              {child.name}
+                              <span aria-hidden className="text-sm text-muted">
+                                →
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      }
+                      return (
+                        <li key={child.id}>
+                          <Link
+                            href={categoryLandingHref(locale, frame.audience, child.slug)}
+                            className="block border-b border-line py-4 font-serif text-2xl"
+                            onClick={onClose}
+                          >
+                            {child.name}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
                   <Link
-                    href={`/${locale}/${key}`}
-                    className="text-[11px] tracking-[0.16em] uppercase underline"
+                    href={`/${locale}/${frame.audience}`}
+                    className="eyebrow mt-8 inline-flex underline underline-offset-4"
                     onClick={onClose}
                   >
-                    Home {label}
+                    Home {frame.label}
                   </Link>
-                </li>
-              </ul>
-            ) : null}
-          </div>
-        ))}
+                </div>
+              );
+            }
 
-        <div className="space-y-4 py-6">
-          <Link href={`/${locale}/kids`} className="block font-serif text-2xl" onClick={onClose}>
-            {copy.kids}
-          </Link>
-          <Link href={`/${locale}/brands`} className="block font-serif text-2xl" onClick={onClose}>
-            {copy.brands}
-          </Link>
-          <Link
-            href={offersHref(locale, audience)}
-            className="block font-serif text-2xl"
-            onClick={onClose}
-          >
-            {copy.offers}
-          </Link>
-          <Link href={`/${locale}/cart`} className="block font-serif text-2xl" onClick={onClose}>
-            {copy.bag}
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 pt-4">
-          {brands.slice(0, 6).map((b) => (
-            <Link
-              key={b.id}
-              href={`/${locale}/brands/${b.slug}`}
-              className="border border-line px-3 py-4 text-center text-[11px] tracking-[0.14em] uppercase"
-              onClick={onClose}
-            >
-              {b.name}
-            </Link>
-          ))}
+            // category subtypes
+            const types = frame.node.children ?? [];
+            return (
+              <div key={`cat-${frame.node.id}-${i}`} className="drawer-pane px-5 py-8">
+                <p className="eyebrow text-muted">{copy.type}</p>
+                <ul className="mt-4 space-y-1">
+                  <li>
+                    <Link
+                      href={categoryShopHref(locale, frame.audience, frame.node.slug)}
+                      className="block border-b border-line py-3.5 text-base"
+                      onClick={onClose}
+                    >
+                      {copy.viewAll}
+                    </Link>
+                  </li>
+                  {types.map((child) => (
+                    <li key={child.id}>
+                      <Link
+                        href={categoryShopHref(locale, frame.audience, child.slug)}
+                        className="block border-b border-line py-3.5 text-base text-ink/85"
+                        onClick={onClose}
+                      >
+                        {child.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

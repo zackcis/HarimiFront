@@ -17,18 +17,20 @@ type Props = {
 };
 
 export function ConfirmationStatus({ locale, reference, token, initialOrder }: Props) {
-  const { clear } = useCart();
+  const { clear, ready: cartReady } = useCart();
   const clearedRef = useRef(false);
   const [order, setOrder] = useState(initialOrder);
   const [polling, setPolling] = useState(initialOrder.payment_status === 'pending_payment');
   const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
+    // Wait for localStorage hydrate — clearing before ready lets hydrate restore the bag.
+    if (!cartReady) return;
     if (order.payment_status === 'paid' && !clearedRef.current) {
       clearedRef.current = true;
       clear();
     }
-  }, [order.payment_status, clear]);
+  }, [order.payment_status, clear, cartReady]);
 
   useEffect(() => {
     if (order.payment_status !== 'pending_payment') {

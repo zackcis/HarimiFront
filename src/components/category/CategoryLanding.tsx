@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { ProductRail } from '@/components/ProductRail';
+import { CategoryStrip } from '@/components/shop/CategoryStrip';
 import type { EditorialCopy } from '@/lib/editorial';
-import type { Audience, Locale, ProductCard } from '@/lib/types';
+import type { Audience, CategoryNode, Locale, ProductCard } from '@/lib/types';
+import { navCopy } from '@/lib/nav';
 
 export function CategoryLandingHero({
   name,
@@ -31,13 +33,13 @@ export function CategoryLandingHero({
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/15" />
       <div className="container-wide relative z-10 flex min-h-[70vh] flex-col justify-end pb-14 pt-28 md:min-h-[78vh] md:pb-20">
-        <p className="text-[11px] tracking-[0.28em] uppercase text-ivory/55 hero-reveal">
+        <p className="eyebrow text-ivory/55 hero-reveal">
           {copy.eyebrow ?? audienceLabel}
         </p>
-        <h1 className="mt-4 max-w-3xl font-serif text-5xl leading-[1.02] md:text-7xl hero-reveal hero-reveal-delay-1">
+        <h1 className="hero-title mt-4 max-w-3xl font-serif hero-reveal hero-reveal-delay-1">
           {copy.headline}
         </h1>
-        <p className="mt-2 text-[11px] tracking-[0.2em] uppercase text-ivory/45 hero-reveal hero-reveal-delay-1">
+        <p className="eyebrow mt-2 text-ivory/45 hero-reveal hero-reveal-delay-1">
           {name}
         </p>
       </div>
@@ -51,16 +53,22 @@ export function CategoryLandingBody({
   copy,
   shopHref,
   featured,
-  childLinks,
+  typeCategories,
+  categorySlug,
+  categoryImage,
 }: {
   locale: Locale;
   audience: Audience;
   copy: EditorialCopy;
   shopHref: string;
   featured: ProductCard[];
-  childLinks?: Array<{ href: string; name: string }>;
+  /** L3 type children — rendered as Intimissimi-style image strip. */
+  typeCategories?: CategoryNode[];
+  categorySlug: string;
+  categoryImage?: string | null;
 }) {
   const it = locale === 'it';
+  const copyNav = navCopy(locale);
 
   return (
     <>
@@ -74,30 +82,30 @@ export function CategoryLandingBody({
           <div className="flex flex-wrap items-center gap-4 md:justify-end page-enter page-enter-delay">
             <Link
               href={shopHref}
-              className="bg-ink px-7 py-3.5 text-[11px] tracking-[0.2em] text-ivory uppercase transition hover:opacity-90"
+              className="eyebrow inline-flex min-h-11 items-center bg-ink px-7 text-ivory transition hover:opacity-90"
             >
               {it ? 'Vedi la collezione' : 'Shop the collection'}
             </Link>
             <Link
               href={`/${locale}/${audience}`}
-              className="text-[11px] tracking-[0.18em] uppercase underline underline-offset-4"
+              className="eyebrow inline-flex min-h-11 items-center underline underline-offset-4"
             >
               {it ? 'Torna alla home' : 'Back to home'}
             </Link>
           </div>
         </div>
 
-        {childLinks && childLinks.length > 0 ? (
-          <div className="container-wide mt-14 flex flex-wrap gap-x-8 gap-y-3">
-            {childLinks.map((child) => (
-              <Link
-                key={child.href}
-                href={child.href}
-                className="font-serif text-xl text-ink/80 transition hover:text-ink md:text-2xl"
-              >
-                {child.name}
-              </Link>
-            ))}
+        {typeCategories && typeCategories.length > 0 ? (
+          <div className="container-wide mt-14 page-enter page-enter-delay">
+            <CategoryStrip
+              locale={locale}
+              audience={audience}
+              categories={typeCategories}
+              query={{ category: categorySlug }}
+              viewAllSlug={categorySlug}
+              viewAllLabel={copyNav.viewAll}
+              viewAllImage={categoryImage ?? null}
+            />
           </div>
         ) : null}
       </section>
@@ -124,7 +132,7 @@ export function CategoryLandingBody({
           </p>
           <Link
             href={shopHref}
-            className="mt-8 inline-block border border-ink px-8 py-3.5 text-[11px] tracking-[0.2em] uppercase transition hover:bg-ink hover:text-ivory"
+            className="eyebrow mt-8 inline-flex min-h-11 items-center border border-ink px-8 transition hover:bg-ink hover:text-ivory"
           >
             {it ? 'Apri il catalogo' : 'Open the catalogue'}
           </Link>

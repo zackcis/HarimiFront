@@ -8,8 +8,10 @@ export type ProductCard = {
   brand: { slug: string; name: string } | null;
   category: { slug: string; name: string } | null;
   primary_image_url: string | null;
+  secondary_image_url: string | null;
   price_from: string | null;
   price_to: string | null;
+  compare_at_from: string | null;
   currency: string;
   in_stock: boolean;
   colors: Array<{ name: string; hex: string | null }>;
@@ -33,6 +35,7 @@ export type ProductDetail = {
     color: string | null;
     color_hex: string | null;
     price: string;
+    compare_at_price: string | null;
     currency: string;
     stock: number;
     in_stock: boolean;
@@ -47,6 +50,7 @@ export type CategoryNode = {
   name: string;
   parent_id: number | null;
   image_url: string | null;
+  hero_url?: string | null;
   children: CategoryNode[];
 };
 
@@ -55,6 +59,7 @@ export type Brand = {
   slug: string;
   name: string;
   logo_url: string | null;
+  hero_url?: string | null;
   products_count: number;
 };
 

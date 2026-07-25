@@ -63,5 +63,9 @@ export function navCopy(locale: Locale) {
     close: it ? 'Chiudi' : 'Close',
     menu: it ? 'Menu' : 'Menu',
     searchPlaceholder: it ? 'Cerca prodotti, brand…' : 'Search products, brands…',
+    back: it ? 'Indietro' : 'Back',
+    type: it ? 'Tipo' : 'Type',
+    viewAll: it ? 'Vedi tutto' : 'View all',
+    shopAll: it ? 'Vedi tutto' : 'Shop all',
   };
 }

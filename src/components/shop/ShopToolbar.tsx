@@ -27,7 +27,7 @@ export function ShopToolbar({
       <p className="text-sm text-muted">
         {count} {it ? 'prodotti' : 'products'}
       </p>
-      <div className="flex flex-wrap gap-3 text-[11px] tracking-[0.14em] uppercase">
+      <div className="eyebrow flex flex-wrap gap-4">
         {SORTS.map((sort) => (
           <Link
             key={sort.value}
@@ -36,9 +36,11 @@ export function ShopToolbar({
               audience,
               withShopQuery(query, { sort: sort.value }),
             )}
-            className={
-              current === sort.value ? 'text-ink underline' : 'text-muted hover:text-ink'
-            }
+            className={`inline-flex min-h-9 items-center ${
+              current === sort.value
+                ? 'text-ink underline underline-offset-4'
+                : 'nav-link-underline text-muted hover:text-ink'
+            }`}
           >
             {it ? sort.it : sort.en}
           </Link>

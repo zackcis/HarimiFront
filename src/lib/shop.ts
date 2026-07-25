@@ -1,7 +1,29 @@
+import type { CategoryNode } from '@/lib/types';
+
+export type CategoryLookup = {
+  node: CategoryNode;
+  /** Ancestors from the searched root down to the node's direct parent. */
+  ancestors: CategoryNode[];
+};
+
+/** Depth-first lookup of a category slug anywhere in a subtree. */
+export function findCategoryInTree(
+  root: CategoryNode,
+  slug: string,
+): CategoryLookup | null {
+  if (root.slug === slug) return { node: root, ancestors: [] };
+  for (const child of root.children ?? []) {
+    const found = findCategoryInTree(child, slug);
+    if (found) return { node: found.node, ancestors: [root, ...found.ancestors] };
+  }
+  return null;
+}
+
 export type ShopFacets = {
   sizes: string[];
   colors: Array<{ name: string; hex: string | null }>;
   brands: Array<{ slug: string; name: string }>;
+  categories: Array<{ slug: string; count: number }>;
 };
 
 export type ShopQuery = {

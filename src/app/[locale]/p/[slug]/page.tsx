@@ -5,9 +5,10 @@ import { ProductBuyBox } from '@/components/ProductBuyBox';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductRail } from '@/components/ProductRail';
 import { fetchProduct } from '@/lib/api';
-import { isLocale } from '@/lib/i18n';
+import { isAudience, isLocale } from '@/lib/i18n';
+import { categoryShopHref } from '@/lib/nav';
 import { pageMetadata, productJsonLd } from '@/lib/seo';
-import type { Locale } from '@/lib/types';
+import type { Audience, Locale, ProductCard } from '@/lib/types';
 
 export async function generateMetadata({
   params,
@@ -44,6 +45,89 @@ export async function generateMetadata({
       pathWithoutLocale: `/p/${slug}`,
     });
   }
+}
+
+function PdpAccordion({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details className="accordion border-b border-line" open={defaultOpen}>
+      <summary className="tap flex items-center justify-between py-5">
+        <span className="eyebrow">{title}</span>
+        <span
+          aria-hidden
+          className="accordion-marker relative ml-4 inline-flex h-3 w-3 items-center justify-center text-muted"
+        >
+          <span className="absolute h-px w-3 bg-current" />
+          <span className="absolute h-3 w-px bg-current" />
+        </span>
+      </summary>
+      <div className="accordion-panel pb-6 text-sm leading-7 text-muted">{children}</div>
+    </details>
+  );
+}
+
+function CompleteTheLook({
+  items,
+  locale,
+}: {
+  items: ProductCard[];
+  locale: Locale;
+}) {
+  const it = locale === 'it';
+  const list = items.slice(0, 4);
+  if (!list.length) return null;
+
+  return (
+    <div className="mt-10 border-t border-line pt-8">
+      <p className="eyebrow text-muted">
+        {it ? 'Completa il look' : 'Complete the look'}
+      </p>
+      <ul className="mt-4 flex gap-3 overflow-x-auto pb-1 sm:gap-4">
+        {list.map((item) => (
+          <li key={item.id} className="w-30 shrink-0 sm:w-32">
+            <Link href={`/${locale}/p/${item.slug}`} className="group block">
+              <span className="relative block aspect-3/4 overflow-hidden bg-ivory-2">
+                {item.primary_image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={item.primary_image_url}
+                    alt=""
+                    className="h-full w-full object-cover object-[center_18%] transition-opacity duration-(--dur-fast) group-hover:opacity-90"
+                  />
+                ) : null}
+              </span>
+              <span className="mt-2 block truncate text-sm leading-snug text-ink">
+                {item.title}
+              </span>
+              <span className="mt-0.5 block text-sm text-muted">
+                {item.price_from
+                  ? new Intl.NumberFormat(locale === 'it' ? 'it-IT' : 'en-IE', {
+                      style: 'currency',
+                      currency: item.currency || 'EUR',
+                    }).format(Number(item.price_from))
+                  : '—'}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function audienceFromPath(path: string[] | undefined): Audience {
+  const root = path?.[0]?.toLowerCase() ?? '';
+  if (root.includes('uomo') || root.includes('men')) return 'men';
+  if (root.includes('bambin') || root.includes('kids')) return 'kids';
+  if (isAudience(root)) return root;
+  return 'women';
 }
 
 export default async function ProductPage({
@@ -85,6 +169,8 @@ export default async function ProductPage({
 
   const look = product.complete_the_look ?? [];
   const related = product.related ?? [];
+  const crumbs = product.category?.path ?? [];
+  const audience = audienceFromPath(crumbs);
 
   return (
     <>
@@ -93,67 +179,98 @@ export default async function ProductPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <main>
-        <div className="container-wide grid gap-12 py-12 md:grid-cols-2 md:gap-20 md:py-20 lg:gap-24">
-          <ProductGallery images={product.images} title={product.title} />
+        <nav
+          aria-label="Breadcrumb"
+          className="container-wide pt-4 text-[11px] tracking-[0.14em] uppercase text-muted md:pt-6"
+        >
+          <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <li>
+              <Link href={`/${locale}/${audience}`} className="hover:text-ink">
+                {crumbs[0] ?? (it ? 'Home' : 'Home')}
+              </Link>
+            </li>
+            {crumbs.slice(1).map((label, i) => {
+              const isLast = i === crumbs.slice(1).length - 1;
+              return (
+                <li key={`${label}-${i}`} className="flex items-center gap-2">
+                  <span aria-hidden>/</span>
+                  {isLast && product.category?.slug ? (
+                    <Link
+                      href={categoryShopHref(locale, audience, product.category.slug)}
+                      className="hover:text-ink"
+                    >
+                      {label}
+                    </Link>
+                  ) : (
+                    <span>{label}</span>
+                  )}
+                </li>
+              );
+            })}
+            <li className="flex items-center gap-2">
+              <span aria-hidden>/</span>
+              <span className="text-ink">{product.title}</span>
+            </li>
+          </ol>
+        </nav>
 
-          <div className="md:sticky md:top-[calc(var(--header-h)+2rem)] md:self-start">
+        <div className="container-wide grid gap-8 py-6 md:grid-cols-[minmax(0,1.75fr)_minmax(280px,0.85fr)] md:items-start md:gap-10 md:py-10 lg:gap-14">
+          <div className="min-w-0 md:sticky md:top-[calc(var(--header-h)+1.5rem)] md:self-start">
+            <ProductGallery images={product.images} title={product.title} />
+          </div>
+
+          <div className="min-w-0 md:max-w-md md:justify-self-stretch lg:max-w-none">
             <ProductBuyBox product={product} locale={locale} />
 
-            {product.description ? (
-              <p className="mt-12 text-[15px] leading-relaxed text-muted whitespace-pre-line">
-                {product.description}
-              </p>
-            ) : null}
+            <CompleteTheLook items={look} locale={locale} />
 
-            <div className="mt-10 space-y-5 border-t border-line pt-10 text-sm leading-relaxed">
+            <div className="mt-10 border-t border-line">
+              {product.description ? (
+                <PdpAccordion title={it ? 'Descrizione' : 'Description'} defaultOpen>
+                  <span className="whitespace-pre-line">{product.description}</span>
+                </PdpAccordion>
+              ) : null}
               {product.fabric ? (
-                <p>
-                  <span className="text-muted">{it ? 'Tessuto' : 'Fabric'}: </span>
+                <PdpAccordion title={it ? 'Tessuto' : 'Fabric'}>
                   {product.fabric}
-                </p>
+                </PdpAccordion>
               ) : null}
               {product.fit_notes ? (
-                <p className="whitespace-pre-line">
-                  <span className="text-muted">{it ? 'Vestibilità' : 'Fit'}: </span>
-                  {product.fit_notes}
-                </p>
+                <PdpAccordion title={it ? 'Vestibilità' : 'Fit'}>
+                  <span className="whitespace-pre-line">{product.fit_notes}</span>
+                </PdpAccordion>
               ) : null}
               {product.care_notes ? (
-                <p className="whitespace-pre-line">
-                  <span className="text-muted">{it ? 'Cura' : 'Care'}: </span>
+                <PdpAccordion title={it ? 'Cura' : 'Care'}>
                   {product.care_notes}
-                </p>
+                </PdpAccordion>
               ) : null}
-              {product.category?.path?.length ? (
-                <p className="text-muted">
-                  {product.category.path.join(' · ')}
-                </p>
-              ) : null}
+              <PdpAccordion title={it ? 'Spedizioni e resi' : 'Shipping & returns'}>
+                <Link
+                  href={`/${locale}/shipping-returns`}
+                  className="underline hover:text-ink"
+                >
+                  {it
+                    ? 'Spedizione in tutta Italia · Resi e cambi'
+                    : 'Shipping across Italy · Returns'}
+                </Link>
+              </PdpAccordion>
             </div>
           </div>
         </div>
 
-        {look.length > 0 ? (
-          <ProductRail
-            title={it ? 'Completa il look' : 'Complete the look'}
-            products={look}
-            locale={locale}
-          />
-        ) : null}
-
         {related.length > 0 ? (
-          <ProductRail
-            title={it ? 'Potrebbe piacerti' : 'You may also like'}
-            products={related}
-            locale={locale}
-          />
+          <div className="container-wide mt-12 border-t border-line pt-10 md:mt-16 md:pt-12">
+            <ProductRail
+              title={it ? 'Potrebbe piacerti' : 'You may also like'}
+              products={related}
+              locale={locale}
+              inset
+            />
+          </div>
         ) : null}
 
-        <div className="container-wide pb-16 text-sm text-muted">
-          <Link href={`/${locale}/shipping-returns`} className="underline hover:text-ink">
-            {it ? 'Spedizione in tutta Italia · Resi e cambi' : 'Shipping across Italy · Returns'}
-          </Link>
-        </div>
+        <div className="h-10 md:h-14" />
       </main>
     </>
   );

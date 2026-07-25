@@ -12,6 +12,9 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, '') ||
   'http://127.0.0.1:8000/api/v1';
 
+/** Fail fast when Laravel is down — never hang SSR until the laptop OOM-kills. */
+const FETCH_TIMEOUT_MS = 8_000;
+
 type ApiList<T> = { data: T; meta?: Record<string, unknown> };
 
 function unwrapProductList(value: unknown): ProductCard[] {
@@ -28,6 +31,10 @@ function unwrapProductList(value: unknown): ProductCard[] {
   return [];
 }
 
+function apiSignal(ms = FETCH_TIMEOUT_MS): AbortSignal {
+  return AbortSignal.timeout(ms);
+}
+
 async function apiGet<T>(path: string, locale: Locale, query: Record<string, string | undefined> = {}): Promise<T> {
   const url = new URL(`${API_BASE}${path}`);
   url.searchParams.set('locale', locale);
@@ -38,6 +45,7 @@ async function apiGet<T>(path: string, locale: Locale, query: Record<string, str
   }
 
   const res = await fetch(url.toString(), {
+    signal: apiSignal(),
     next: { revalidate: 30 },
   });
 
@@ -57,6 +65,7 @@ async function apiPost<T>(path: string, locale: Locale, body: unknown): Promise<
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(body),
     cache: 'no-store',
+    signal: apiSignal(15_000),
   });
 
   const json = (await res.json()) as T;
@@ -69,11 +78,72 @@ export type CategoryDetail = {
   name: string;
   parent: { slug: string; name: string } | null;
   image_url: string | null;
-  children: Array<{ slug: string; name: string; image_url: string | null }>;
+  hero_url?: string | null;
+  children: Array<{
+    slug: string;
+    name: string;
+    image_url: string | null;
+    hero_url?: string | null;
+  }>;
+};
+
+export type SiteMediaSlot = {
+  welcome: string | null;
+  home_still: string | null;
+  home_video_mp4: string | null;
+  home_video_webm: string | null;
+  new_arrivals_still: string | null;
+  instagram_1: string | null;
+  instagram_2: string | null;
+  instagram_3: string | null;
+  instagram_4: string | null;
+  instagram_5: string | null;
+  instagram_6: string | null;
+};
+
+export const EMPTY_SITE_MEDIA_SLOT: SiteMediaSlot = {
+  welcome: null,
+  home_still: null,
+  home_video_mp4: null,
+  home_video_webm: null,
+  new_arrivals_still: null,
+  instagram_1: null,
+  instagram_2: null,
+  instagram_3: null,
+  instagram_4: null,
+  instagram_5: null,
+  instagram_6: null,
+};
+
+export type SiteMediaMap = Record<'women' | 'men' | 'kids', SiteMediaSlot>;
+
+export function instagramCollageFromSlot(slot: SiteMediaSlot): (string | null)[] {
+  return [
+    slot.instagram_1,
+    slot.instagram_2,
+    slot.instagram_3,
+    slot.instagram_4,
+    slot.instagram_5,
+    slot.instagram_6,
+  ];
+}
+
+export type MerchandisingResult = {
+  shelves: Record<string, ProductCard[]>;
+  titles: Record<string, string>;
 };
 
 export async function fetchCategories(locale: Locale): Promise<CategoryNode[]> {
-  const json = await apiGet<ApiList<CategoryNode[]>>('/categories', locale);
+  const url = new URL(`${API_BASE}/categories`);
+  url.searchParams.set('locale', locale);
+  const res = await fetch(url.toString(), {
+    signal: apiSignal(),
+    next: { revalidate: 30 },
+  });
+  if (!res.ok) {
+    throw new Error(`API ${res.status}: /categories`);
+  }
+  const json = (await res.json()) as ApiList<CategoryNode[]>;
   return json.data ?? [];
 }
 
@@ -113,10 +183,15 @@ export async function fetchProducts(
   meta?: {
     locale?: string;
     sort?: string;
+    current_page?: number;
+    last_page?: number;
+    per_page?: number;
+    total?: number;
     facets?: {
       sizes: string[];
       colors: Array<{ name: string; hex: string | null }>;
       brands: Array<{ slug: string; name: string }>;
+      categories: Array<{ slug: string; count: number }>;
     };
     [key: string]: unknown;
   };
@@ -126,10 +201,15 @@ export async function fetchProducts(
       meta?: {
         locale?: string;
         sort?: string;
+        current_page?: number;
+        last_page?: number;
+        per_page?: number;
+        total?: number;
         facets?: {
           sizes: string[];
           colors: Array<{ name: string; hex: string | null }>;
           brands: Array<{ slug: string; name: string }>;
+          categories: Array<{ slug: string; count: number }>;
         };
       };
     }
@@ -142,19 +222,45 @@ export async function fetchProduct(locale: Locale, slug: string): Promise<Produc
   return json.data;
 }
 
-export async function fetchMerchandising(locale: Locale): Promise<Record<string, ProductCard[]>> {
-  const json = await apiGet<ApiList<Record<string, unknown>>>('/merchandising', locale);
+export async function fetchMerchandising(locale: Locale): Promise<MerchandisingResult> {
+  const json = await apiGet<
+    ApiList<Record<string, unknown>> & {
+      meta?: { sections?: Record<string, { title?: string }> };
+    }
+  >('/merchandising', locale);
   const raw = json.data ?? {};
-  const out: Record<string, ProductCard[]> = {};
+  const shelves: Record<string, ProductCard[]> = {};
   for (const [key, value] of Object.entries(raw)) {
-    out[key] = unwrapProductList(value);
+    shelves[key] = unwrapProductList(value);
   }
-  return out;
+  const titles: Record<string, string> = {};
+  const sections = json.meta?.sections ?? {};
+  for (const [key, section] of Object.entries(sections)) {
+    if (section?.title) {
+      titles[key] = section.title;
+    }
+  }
+  return { shelves, titles };
 }
 
 export async function fetchMerchandisingShelf(locale: Locale, shelf: string): Promise<ProductCard[]> {
   const json = await apiGet<ApiList<unknown>>(`/merchandising/${shelf}`, locale);
   return unwrapProductList(json.data);
+}
+
+export async function fetchSiteMedia(locale: Locale): Promise<SiteMediaMap> {
+  const empty = EMPTY_SITE_MEDIA_SLOT;
+  try {
+    const json = await apiGet<ApiList<Partial<SiteMediaMap>>>('/site-media', locale);
+    const data = json.data ?? {};
+    return {
+      women: { ...empty, ...(data.women ?? {}) },
+      men: { ...empty, ...(data.men ?? {}) },
+      kids: { ...empty, ...(data.kids ?? {}) },
+    };
+  } catch {
+    return { women: { ...empty }, men: { ...empty }, kids: { ...empty } };
+  }
 }
 
 export async function previewCheckout(
@@ -204,6 +310,7 @@ export async function fetchOrderLive(
     method: 'GET',
     headers: { Accept: 'application/json' },
     cache: 'no-store',
+    signal: apiSignal(),
   });
 
   if (!res.ok) {

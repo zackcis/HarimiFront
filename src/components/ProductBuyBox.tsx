@@ -4,7 +4,21 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { formatEur } from '@/lib/api';
 import { useCart } from '@/lib/cart';
+import { InfoModal } from '@/components/info/InfoModal';
+import { ShippingReturnsBody } from '@/components/info/ShippingReturnsBody';
+import { SizeGuideBody } from '@/components/info/SizeGuideBody';
 import type { Locale, ProductDetail } from '@/lib/types';
+
+function discountPercent(price: string | null | undefined, compare: string | null | undefined) {
+  const now = Number(price);
+  const was = Number(compare);
+  if (!Number.isFinite(now) || !Number.isFinite(was) || was <= now || was <= 0) {
+    return null;
+  }
+  return Math.round((1 - now / was) * 100);
+}
+
+type InfoKind = 'size' | 'shipping' | null;
 
 export function ProductBuyBox({
   product,
@@ -47,6 +61,7 @@ export function ProductBuyBox({
   });
   const [qty, setQty] = useState(1);
   const [message, setMessage] = useState('');
+  const [info, setInfo] = useState<InfoKind>(null);
 
   const selected = useMemo(
     () =>
@@ -64,6 +79,14 @@ export function ProductBuyBox({
     );
 
   const maxQty = selected?.in_stock ? Math.min(selected.stock, 10) : 0;
+
+  const priceVariant = selected ?? product.variants[0];
+  const onSale =
+    priceVariant?.compare_at_price != null &&
+    Number(priceVariant.compare_at_price) > Number(priceVariant.price);
+  const pct = onSale
+    ? discountPercent(priceVariant?.price, priceVariant?.compare_at_price)
+    : null;
 
   const onAdd = () => {
     if (!selected?.in_stock) return;
@@ -90,38 +113,53 @@ export function ProductBuyBox({
   const anyInStock = product.variants.some((v) => v.in_stock);
 
   return (
-    <div className="space-y-8">
+    <div>
       {product.brand?.name ? (
         <Link
           href={`/${locale}/brands/${product.brand.slug}`}
-          className="text-[11px] tracking-[0.2em] text-muted uppercase hover:text-ink"
+          className="eyebrow text-muted transition-colors duration-(--dur-fast) hover:text-ink"
         >
           {product.brand.name}
         </Link>
       ) : null}
 
-      <div>
-        <h1 className="font-serif text-4xl leading-tight md:text-5xl">{product.title}</h1>
-        <p className="mt-4 text-lg">
-          {selected
-            ? formatEur(selected.price, locale)
-            : product.variants[0]
-              ? formatEur(product.variants[0].price, locale)
-              : '—'}
-        </p>
+      <h1 className="mt-3 font-serif text-[clamp(1.85rem,4vw,2.75rem)] leading-[1.12] tracking-tight text-ink">
+        {product.title}
+      </h1>
+
+      <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2">
+        {onSale ? (
+          <>
+            <span className="text-lg text-sale">
+              {formatEur(priceVariant?.price ?? null, locale)}
+            </span>
+            <span className="text-base text-muted line-through">
+              {formatEur(priceVariant?.compare_at_price ?? null, locale)}
+            </span>
+            {pct ? (
+              <span className="bg-ivory-2 px-1.5 py-0.5 text-[11px] leading-none tracking-normal text-sale tabular-nums">
+                −{pct}%
+              </span>
+            ) : null}
+          </>
+        ) : (
+          <span className="text-lg text-ink">
+            {priceVariant ? formatEur(priceVariant.price, locale) : '—'}
+          </span>
+        )}
       </div>
 
       {!anyInStock ? (
-        <p className="text-sm text-muted">{it ? 'Prodotto esaurito' : 'Sold out'}</p>
+        <p className="mt-8 text-sm text-muted">{it ? 'Prodotto esaurito' : 'Sold out'}</p>
       ) : (
-        <>
+        <div className="mt-8 space-y-6">
           {colors.length > 0 ? (
             <div>
-              <p className="text-[11px] tracking-[0.18em] text-muted uppercase">
+              <p className="eyebrow text-muted">
                 {it ? 'Colore' : 'Color'}
                 {color ? ` · ${color}` : ''}
               </p>
-              <div className="mt-3 flex flex-wrap gap-3">
+              <div className="mt-3 flex flex-wrap gap-1.5">
                 {colors.map((c) => {
                   const active = color === c.name;
                   return (
@@ -129,6 +167,8 @@ export function ProductBuyBox({
                       key={c.name}
                       type="button"
                       title={c.name}
+                      aria-label={c.name}
+                      aria-pressed={active}
                       onClick={() => {
                         setColor(c.name);
                         const nextSize = product.variants.find(
@@ -137,11 +177,17 @@ export function ProductBuyBox({
                         if (nextSize) setSize(nextSize);
                         setQty(1);
                       }}
-                      className={`h-8 w-8 rounded-full border ${
-                        active ? 'border-ink ring-1 ring-ink' : 'border-line'
-                      }`}
-                      style={{ backgroundColor: c.hex || '#ccc' }}
-                    />
+                      className="tap inline-flex items-center justify-center rounded-full"
+                    >
+                      <span
+                        className={`inline-block h-8 w-8 rounded-full border transition-[box-shadow,border-color] duration-(--dur-fast) ${
+                          active
+                            ? 'border-ink ring-2 ring-ink ring-offset-2 ring-offset-background'
+                            : 'border-line'
+                        }`}
+                        style={{ backgroundColor: c.hex || '#ccc' }}
+                      />
+                    </button>
                   );
                 })}
               </div>
@@ -150,9 +196,7 @@ export function ProductBuyBox({
 
           {sizes.length > 0 ? (
             <div>
-              <p className="text-[11px] tracking-[0.18em] text-muted uppercase">
-                {it ? 'Taglia' : 'Size'}
-              </p>
+              <p className="eyebrow text-muted">{it ? 'Taglia' : 'Size'}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {sizes.map((s) => {
                   const available = sizeAvailable(s);
@@ -162,11 +206,12 @@ export function ProductBuyBox({
                       key={s}
                       type="button"
                       disabled={!available}
+                      aria-pressed={active}
                       onClick={() => {
                         setSize(s);
                         setQty(1);
                       }}
-                      className={`min-w-12 border px-3 py-2 text-sm ${
+                      className={`inline-flex min-h-11 min-w-12 items-center justify-center border px-3 text-sm transition-colors duration-(--dur-fast) ${
                         active
                           ? 'border-ink bg-ink text-ivory'
                           : available
@@ -183,22 +228,20 @@ export function ProductBuyBox({
           ) : null}
 
           <div>
-            <p className="text-[11px] tracking-[0.18em] text-muted uppercase">
-              {it ? 'Quantità' : 'Quantity'}
-            </p>
+            <p className="eyebrow text-muted">{it ? 'Quantità' : 'Quantity'}</p>
             <div className="mt-3 inline-flex items-center border border-line">
               <button
                 type="button"
-                className="h-11 w-11 text-lg"
+                className="h-11 w-11 text-lg transition-opacity duration-(--dur-fast) disabled:opacity-30"
                 disabled={qty <= 1}
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
               >
                 −
               </button>
-              <span className="w-10 text-center text-sm">{qty}</span>
+              <span className="w-10 text-center text-sm tabular-nums">{qty}</span>
               <button
                 type="button"
-                className="h-11 w-11 text-lg"
+                className="h-11 w-11 text-lg transition-opacity duration-(--dur-fast) disabled:opacity-30"
                 disabled={qty >= maxQty}
                 onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
               >
@@ -207,30 +250,62 @@ export function ProductBuyBox({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onAdd}
-            disabled={!selected?.in_stock || maxQty < 1}
-            className="h-12 w-full bg-ink text-[11px] tracking-[0.2em] text-ivory uppercase transition hover:opacity-90 disabled:opacity-40"
-          >
-            {it ? 'Aggiungi alla borsa' : 'Add to bag'}
-          </button>
-          {message ? <p className="text-sm text-muted">{message}</p> : null}
-        </>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={onAdd}
+              disabled={!selected?.in_stock || maxQty < 1}
+              className="h-12 w-full bg-ink text-[11px] tracking-[0.2em] text-ivory uppercase transition-opacity duration-(--dur-base) hover:opacity-90 disabled:opacity-40"
+            >
+              {it ? 'Aggiungi alla borsa' : 'Add to bag'}
+            </button>
+            {message ? (
+              <p className="mt-3 text-sm text-muted">{message}</p>
+            ) : null}
+            <p className="mt-4 text-sm leading-relaxed text-muted">
+              {it
+                ? 'Spedizione standard 2–5 giorni lavorativi · €5,90'
+                : 'Standard shipping 2–5 business days · €5.90'}
+            </p>
+          </div>
+        </div>
       )}
 
-      <div className="space-y-2 border-t border-line pt-6 text-sm text-muted">
-        <p>
-          <Link href={`/${locale}/size-guide`} className="underline hover:text-ink">
-            {it ? 'Guida alle taglie' : 'Size guide'}
-          </Link>
-        </p>
-        <p>
-          <Link href={`/${locale}/shipping-returns`} className="underline hover:text-ink">
-            {it ? 'Spedizioni e resi' : 'Shipping & returns'}
-          </Link>
-        </p>
+      <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 border-t border-line pt-5 text-sm text-muted">
+        <button
+          type="button"
+          onClick={() => setInfo('size')}
+          className="underline underline-offset-4 transition-colors duration-(--dur-fast) hover:text-ink"
+        >
+          {it ? 'Guida alle taglie' : 'Size guide'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setInfo('shipping')}
+          className="underline underline-offset-4 transition-colors duration-(--dur-fast) hover:text-ink"
+        >
+          {it ? 'Spedizioni e resi' : 'Shipping & returns'}
+        </button>
       </div>
+
+      {info === 'size' ? (
+        <InfoModal
+          title={it ? 'Guida alle taglie' : 'Size guide'}
+          closeLabel={it ? 'Chiudi' : 'Close'}
+          onClose={() => setInfo(null)}
+        >
+          <SizeGuideBody locale={locale} />
+        </InfoModal>
+      ) : null}
+      {info === 'shipping' ? (
+        <InfoModal
+          title={it ? 'Spedizioni e resi' : 'Shipping & returns'}
+          closeLabel={it ? 'Chiudi' : 'Close'}
+          onClose={() => setInfo(null)}
+        >
+          <ShippingReturnsBody locale={locale} />
+        </InfoModal>
+      ) : null}
     </div>
   );
 }

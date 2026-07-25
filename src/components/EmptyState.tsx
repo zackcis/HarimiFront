@@ -19,7 +19,7 @@ export function EmptyState({
       {actionHref && actionLabel ? (
         <Link
           href={actionHref}
-          className="mt-10 inline-block border border-ink px-6 py-3 text-[11px] tracking-[0.18em] uppercase transition hover:bg-ink hover:text-ivory"
+          className="mt-10 inline-block border border-ink px-6 py-3 text-[11px] tracking-[0.18em] uppercase transition-[background-color,color,opacity] duration-(--dur-base) hover:bg-ink hover:text-ivory"
         >
           {actionLabel}
         </Link>

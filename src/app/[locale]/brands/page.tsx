@@ -48,7 +48,7 @@ export default async function BrandsPage({
     <main>
       <section className="border-b border-line section-y">
         <div className="container-wide page-enter">
-          <p className="text-[11px] tracking-[0.22em] text-muted uppercase">HARIMI</p>
+          <p className="eyebrow text-muted">HARIMI</p>
           <h1 className="mt-4 font-serif text-5xl md:text-6xl">
             {it ? 'Marchi' : 'Brands'}
           </h1>
@@ -89,7 +89,7 @@ export default async function BrandsPage({
                   />
                 ) : null}
                 <span className="font-serif text-2xl">{brand.name}</span>
-                <span className="mt-3 text-[11px] tracking-[0.16em] uppercase text-muted">
+                <span className="eyebrow mt-3 text-muted">
                   {brand.products_count}{' '}
                   {it
                     ? brand.products_count === 1

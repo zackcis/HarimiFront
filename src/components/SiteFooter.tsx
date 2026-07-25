@@ -16,25 +16,28 @@ export function SiteFooter({ locale }: { locale: Locale }) {
               : 'Multi-brand intimates boutique. Everyday elegance, curated selection.'}
           </p>
         </div>
-        <div className="text-sm text-muted space-y-2">
-          <Link href={`/${locale}/women`} className="block hover:text-ink">
+        <div className="text-sm text-muted">
+          <Link href={`/${locale}/women`} className="block py-1.5 transition-colors duration-(--dur-fast) hover:text-ink">
             {it ? 'Donna' : 'Women'}
           </Link>
-          <Link href={`/${locale}/men`} className="block hover:text-ink">
+          <Link href={`/${locale}/men`} className="block py-1.5 transition-colors duration-(--dur-fast) hover:text-ink">
             {it ? 'Uomo' : 'Men'}
           </Link>
-          <Link href={`/${locale}/brands`} className="block hover:text-ink">
+          <Link href={`/${locale}/kids`} className="block py-1.5 transition-colors duration-(--dur-fast) hover:text-ink">
+            {it ? 'Bambini' : 'Kids'}
+          </Link>
+          <Link href={`/${locale}/brands`} className="block py-1.5 transition-colors duration-(--dur-fast) hover:text-ink">
             {it ? 'Marchi' : 'Brands'}
           </Link>
         </div>
-        <div className="text-sm text-muted space-y-2">
-          <Link href={`/${locale}/shipping-returns`} className="block hover:text-ink">
+        <div className="text-sm text-muted">
+          <Link href={`/${locale}/shipping-returns`} className="block py-1.5 transition-colors duration-(--dur-fast) hover:text-ink">
             {it ? 'Spedizioni e resi' : 'Shipping & returns'}
           </Link>
-          <Link href={`/${locale}/size-guide`} className="block hover:text-ink">
+          <Link href={`/${locale}/size-guide`} className="block py-1.5 transition-colors duration-(--dur-fast) hover:text-ink">
             {it ? 'Guida alle taglie' : 'Size guide'}
           </Link>
-          <p>{it ? 'Assistenza clienti' : 'Customer care'}</p>
+          <p className="py-1.5">{it ? 'Assistenza clienti' : 'Customer care'}</p>
         </div>
       </div>
     </footer>

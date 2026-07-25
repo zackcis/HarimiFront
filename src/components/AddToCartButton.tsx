@@ -67,7 +67,7 @@ export function AddToCartButton({
       <button
         type="button"
         onClick={onAdd}
-        className="h-12 w-full bg-ink text-xs tracking-[0.2em] text-ivory uppercase transition hover:opacity-90"
+        className="h-12 w-full bg-ink text-xs tracking-[0.2em] text-ivory uppercase transition-opacity duration-(--dur-base) hover:opacity-90"
       >
         {locale === 'it' ? 'Aggiungi al carrello' : 'Add to bag'}
       </button>

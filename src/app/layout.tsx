@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Manrope } from 'next/font/google';
 import { CartProvider } from '@/lib/cart';
+import { QuickLookProvider } from '@/components/QuickLook';
 import { SITE_NAME, siteDescription, siteUrl } from '@/lib/seo';
 import './globals.css';
 
@@ -39,9 +40,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="it" className={`${serif.variable} ${sans.variable} h-full`}>
+    <html
+      lang="it"
+      data-scroll-behavior="smooth"
+      className={`${serif.variable} ${sans.variable} h-full`}
+    >
       <body className="min-h-full flex flex-col antialiased">
-        <CartProvider>{children}</CartProvider>
+        <CartProvider>
+          <QuickLookProvider>{children}</QuickLookProvider>
+        </CartProvider>
       </body>
     </html>
   );

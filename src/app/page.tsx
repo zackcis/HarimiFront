@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { WhatsAppFab } from '@/components/WhatsAppFab';
 import { SITE_NAME, siteDescription, siteUrl } from '@/lib/seo';
-import { mediaExists, welcomeMediaPath } from '@/lib/media';
+import { fetchSiteMedia } from '@/lib/api';
+import { preferMedia, welcomeMediaPath } from '@/lib/media';
 
 export const metadata: Metadata = {
   title: { absolute: SITE_NAME },
@@ -31,15 +33,16 @@ async function WelcomePanel({
   eyebrow,
   href,
   divider,
+  apiImage,
 }: {
   audience: 'women' | 'men' | 'kids';
   label: string;
   eyebrow: string;
   href: string;
   divider: boolean;
+  apiImage?: string | null;
 }) {
-  const path = welcomeMediaPath(audience);
-  const hasMedia = await mediaExists(path);
+  const image = await preferMedia(apiImage, welcomeMediaPath(audience));
 
   return (
     <Link
@@ -48,10 +51,10 @@ async function WelcomePanel({
         divider ? 'border-b border-ivory/15 md:border-b-0 md:border-r' : ''
       }`}
     >
-      {hasMedia ? (
+      {image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={path}
+          src={image}
           alt=""
           className="img-zoom absolute inset-0 h-full w-full object-cover"
         />
@@ -75,6 +78,8 @@ async function WelcomePanel({
 }
 
 export default async function WelcomePage() {
+  const siteMedia = await fetchSiteMedia('it');
+
   return (
     <main className="relative min-h-screen bg-ink text-ivory">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center px-6 pt-10 md:pt-12">
@@ -83,12 +88,18 @@ export default async function WelcomePage() {
         <p className="mt-6 text-center font-serif text-xl font-normal text-ivory/85 md:text-2xl">
           Seleziona il tuo mondo
         </p>
-        <div className="mt-4 flex gap-4 text-[11px] tracking-[0.2em] uppercase text-ivory/50">
-          <Link href="/it/women" className="pointer-events-auto hover:text-ivory">
+        <div className="mt-3 flex items-center gap-2 text-[11px] tracking-[0.2em] uppercase text-ivory/50">
+          <Link
+            href="/it/women"
+            className="tap pointer-events-auto inline-flex items-center justify-center px-3 hover:text-ivory"
+          >
             IT
           </Link>
           <span aria-hidden>·</span>
-          <Link href="/en/women" className="pointer-events-auto hover:text-ivory">
+          <Link
+            href="/en/women"
+            className="tap pointer-events-auto inline-flex items-center justify-center px-3 hover:text-ivory"
+          >
             EN
           </Link>
         </div>
@@ -101,6 +112,7 @@ export default async function WelcomePage() {
           eyebrow="Women"
           href="/it/women"
           divider
+          apiImage={siteMedia.women.welcome}
         />
         <WelcomePanel
           audience="men"
@@ -108,6 +120,7 @@ export default async function WelcomePage() {
           eyebrow="Men"
           href="/it/men"
           divider
+          apiImage={siteMedia.men.welcome}
         />
         <WelcomePanel
           audience="kids"
@@ -115,8 +128,10 @@ export default async function WelcomePage() {
           eyebrow="Kids"
           href="/it/kids"
           divider={false}
+          apiImage={siteMedia.kids.welcome}
         />
       </div>
+      <WhatsAppFab locale="it" />
     </main>
   );
 }
