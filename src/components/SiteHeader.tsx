@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/cart';
 import { MiniCart } from '@/components/MiniCart';
 import { audienceLabel } from '@/lib/i18n';
@@ -63,6 +63,7 @@ export function SiteHeader({
   brands: Brand[];
 }) {
   const pathname = usePathname() || '';
+  const searchParams = useSearchParams();
   // Prefer URL path so search/offers stay on kids/men when browsing those worlds.
   // Locale layout used to always pass audience="women", which hid pathname.
   const audience = audienceFromPath(pathname) ?? audienceProp ?? 'women';
@@ -103,6 +104,12 @@ export function SiteHeader({
   );
 
   const otherLocale: Locale = locale === 'it' ? 'en' : 'it';
+  const otherLocaleHref = useMemo(() => {
+    const swapped =
+      pathname.replace(/^\/(it|en)(?=\/|$)/, `/${otherLocale}`) || `/${otherLocale}`;
+    const qs = searchParams.toString();
+    return qs ? `${swapped}?${qs}` : swapped;
+  }, [pathname, otherLocale, searchParams]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -218,7 +225,7 @@ export function SiteHeader({
             {copy.search}
           </button>
           <Link
-            href={`/${otherLocale}/${audience}`}
+            href={otherLocaleHref}
             className="eyebrow tap inline-flex items-center justify-center px-2 text-muted transition hover:text-ink"
           >
             {otherLocale.toUpperCase()}
