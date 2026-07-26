@@ -156,7 +156,7 @@ export default async function ShopPage({
   // Strip context: audience root shows L2 categories; an L2 with children (or
   // an L3 within one) shows that family's types with a "View all" tile.
   let stripCategories: CategoryNode[] = categories;
-  let stripViewAllSlug = rootSlug;
+  let stripViewAllSlug: string = rootSlug;
   let stripViewAllLabel = it ? 'Tutti' : 'All';
   let stripViewAllImage: string | null = null;
   if (currentNode && currentNode.slug !== rootSlug) {

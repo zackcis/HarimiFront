@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
 import { fetchBrands, fetchCategories } from '@/lib/api';
 import type { Audience, Brand, CategoryNode, Locale } from '@/lib/types';
@@ -28,12 +29,14 @@ export async function StoreChrome({
   return (
     <>
       {showHeader ? (
-        <SiteHeader
-          locale={locale}
-          audience={audience}
-          categories={categories}
-          brands={brands}
-        />
+        <Suspense fallback={null}>
+          <SiteHeader
+            locale={locale}
+            audience={audience}
+            categories={categories}
+            brands={brands}
+          />
+        </Suspense>
       ) : null}
       {children}
     </>

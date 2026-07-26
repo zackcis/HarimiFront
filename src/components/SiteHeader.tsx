@@ -745,6 +745,10 @@ function MobileDrawer({
               );
             }
 
+            if (frame.kind !== 'category') {
+              return null;
+            }
+
             // category subtypes
             const types = frame.node.children ?? [];
             return (
