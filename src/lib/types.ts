@@ -49,6 +49,7 @@ export type CategoryNode = {
   slug: string;
   name: string;
   parent_id: number | null;
+  position?: number;
   image_url: string | null;
   hero_url?: string | null;
   children: CategoryNode[];

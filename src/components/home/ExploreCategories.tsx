@@ -2,25 +2,6 @@ import Link from 'next/link';
 import { categoryLandingHref } from '@/lib/nav';
 import type { Audience, CategoryNode, Locale } from '@/lib/types';
 
-const WOMEN_ORDER = ['bras', 'knickers', 'lingerie', 'knitwear', 'nightwear'];
-const MEN_ORDER = ['boxers', 'briefs', 'tops', 'easywear', 'socks', 'swimsuits'];
-const KIDS_ORDER = ['kids-underwear', 'kids-undershirts', 'kids-pyjamas', 'kids-socks'];
-
-function orderFor(audience: Audience): string[] {
-  if (audience === 'women') return WOMEN_ORDER;
-  if (audience === 'men') return MEN_ORDER;
-  return KIDS_ORDER;
-}
-
-function sortCategories(audience: Audience, categories: CategoryNode[]): CategoryNode[] {
-  const order = orderFor(audience);
-  return [...categories].sort((a, b) => {
-    const ai = order.indexOf(a.slug);
-    const bi = order.indexOf(b.slug);
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-  });
-}
-
 function gridClass(count: number): string {
   if (count <= 4) return 'grid-cols-2 md:grid-cols-4';
   if (count === 5) return 'grid-cols-2 md:grid-cols-3 lg:grid-cols-5';
@@ -36,7 +17,7 @@ export function ExploreCategories({
   audience: Audience;
   categories: CategoryNode[];
 }) {
-  const ordered = sortCategories(audience, categories);
+  const ordered = categories;
   if (!ordered.length) return null;
   const it = locale === 'it';
 

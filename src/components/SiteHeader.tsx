@@ -23,25 +23,6 @@ type DrawerFrame =
   | { kind: 'audience'; audience: Audience; root: CategoryNode; label: string }
   | { kind: 'category'; audience: Audience; node: CategoryNode };
 
-const WOMEN_ORDER = ['bras', 'knickers', 'lingerie', 'knitwear', 'nightwear'];
-const MEN_ORDER = ['boxers', 'briefs', 'tops', 'easywear', 'socks', 'swimsuits'];
-const KIDS_ORDER = ['kids-underwear', 'kids-undershirts', 'kids-pyjamas', 'kids-socks'];
-
-function orderForAudience(audience: Audience): string[] {
-  if (audience === 'women') return WOMEN_ORDER;
-  if (audience === 'men') return MEN_ORDER;
-  return KIDS_ORDER;
-}
-
-function sortChildren(audience: Audience, children: CategoryNode[]): CategoryNode[] {
-  const order = orderForAudience(audience);
-  return [...children].sort((a, b) => {
-    const ai = order.indexOf(a.slug);
-    const bi = order.indexOf(b.slug);
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-  });
-}
-
 /** Locale segment is parts[0]; audience lives at parts[1] on shop/home routes. */
 function audienceFromPath(pathname: string): Audience | null {
   const segment = pathname.split('/').filter(Boolean)[1];
@@ -391,7 +372,7 @@ function MegaCategoryPanel({
   onHoverEnter?: () => void;
   onHoverLeave?: () => void;
 }) {
-  const parents = sortChildren(audience, root?.children ?? []);
+  const parents = root?.children ?? [];
   const [activeId, setActiveId] = useState<number | null>(() => parents[0]?.id ?? null);
   const activeParent = parents.find((p) => p.id === activeId) ?? parents[0] ?? null;
   const subtypes = activeParent?.children ?? [];
@@ -699,7 +680,7 @@ function MobileDrawer({
           {/* Audience + category panes — render stacked frames after root */}
           {stack.slice(1).map((frame, i) => {
             if (frame.kind === 'audience') {
-              const kids = sortChildren(frame.audience, frame.root.children ?? []);
+              const kids = frame.root.children ?? [];
               return (
                 <div key={`aud-${frame.audience}-${i}`} className="drawer-pane px-5 py-8">
                   <ul className="space-y-1">

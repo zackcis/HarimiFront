@@ -7,20 +7,6 @@ import {
   withShopQuery,
 } from '@/lib/shop';
 
-const WOMEN_ORDER = ['bras', 'knickers', 'lingerie', 'knitwear', 'nightwear'];
-const MEN_ORDER = ['boxers', 'briefs', 'tops', 'easywear', 'socks', 'swimsuits'];
-const KIDS_ORDER = ['kids-underwear', 'kids-undershirts', 'kids-pyjamas', 'kids-socks'];
-
-function sortCats(audience: Audience, cats: CategoryNode[]) {
-  const order =
-    audience === 'women' ? WOMEN_ORDER : audience === 'men' ? MEN_ORDER : KIDS_ORDER;
-  return [...cats].sort((a, b) => {
-    const ai = order.indexOf(a.slug);
-    const bi = order.indexOf(b.slug);
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-  });
-}
-
 function countForSlug(
   categories: Array<{ slug: string; count: number }> | undefined,
   slug: string,
@@ -54,7 +40,7 @@ export function ShopFilters({
   const href = (patch: Partial<ShopQuery>, unset: Array<keyof ShopQuery> = []) =>
     buildShopHref(locale, audience, withShopQuery(query, patch, unset));
 
-  const ordered = sortCats(audience, categories);
+  const ordered = categories;
   const isAll =
     !query.category || query.category === audienceRootSlug;
 
