@@ -36,7 +36,7 @@ export async function BrandStrip({
             <li key={brand.id}>
               <Link
                 href={`/${locale}/brands/${brand.slug}`}
-                className="group flex aspect-5/3 flex-col items-center justify-center gap-3 bg-ivory px-5 py-8 text-center transition duration-(--dur-base) hover:bg-ivory-2 sm:px-6"
+                className="group flex aspect-5/3 flex-col items-center justify-center gap-3 bg-ivory px-4 py-6 text-center transition duration-(--dur-base) hover:bg-ivory-2 sm:px-6 sm:py-8"
               >
                 {brand.logo_url ? (
                   <>
@@ -44,7 +44,7 @@ export async function BrandStrip({
                     <img
                       src={brand.logo_url}
                       alt={brand.name}
-                      className="h-9 w-auto max-w-[72%] object-contain opacity-90 transition duration-(--dur-base) group-hover:opacity-100 md:h-11"
+                      className="h-14 w-auto max-w-[82%] object-contain opacity-95 transition duration-(--dur-base) group-hover:opacity-100 sm:h-16 md:h-20 lg:h-24"
                     />
                     <span className="eyebrow max-w-full truncate text-muted opacity-0 transition duration-(--dur-base) group-hover:opacity-100">
                       {brand.name}
