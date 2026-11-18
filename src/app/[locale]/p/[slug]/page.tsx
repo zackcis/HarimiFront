@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { PdpPurchase } from '@/components/PdpPurchase';
+import { ProductDescription } from '@/components/ProductDescription';
 import { ProductRail } from '@/components/ProductRail';
 import { fetchProduct } from '@/lib/api';
 import { isAudience, isLocale } from '@/lib/i18n';
@@ -24,8 +25,11 @@ export async function generateMetadata({
     const product = await fetchProduct(locale, slug);
     const image =
       product.images.find((i) => i.is_primary)?.url ?? product.images[0]?.url ?? null;
+    const plainDesc = product.description
+      ? product.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      : '';
     const desc =
-      product.description?.slice(0, 160) ||
+      plainDesc.slice(0, 160) ||
       (locale === 'it'
         ? `${product.title} su HARIMI — intimates multi-brand.`
         : `${product.title} at HARIMI — multi-brand intimates.`);
@@ -223,7 +227,7 @@ export default async function ProductPage({
               <div className="mt-10 border-t border-line">
                 {product.description ? (
                   <PdpAccordion title={it ? 'Descrizione' : 'Description'} defaultOpen>
-                    <span className="whitespace-pre-line">{product.description}</span>
+                    <ProductDescription value={product.description} />
                   </PdpAccordion>
                 ) : null}
                 {(() => {
