@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ProductBuyBox } from '@/components/ProductBuyBox';
-import { ProductGallery } from '@/components/ProductGallery';
+import { PdpPurchase } from '@/components/PdpPurchase';
 import { ProductRail } from '@/components/ProductRail';
 import { fetchProduct } from '@/lib/api';
 import { isAudience, isLocale } from '@/lib/i18n';
@@ -214,50 +213,78 @@ export default async function ProductPage({
           </ol>
         </nav>
 
-        <div className="container-wide grid gap-8 py-6 md:grid-cols-[minmax(0,1.75fr)_minmax(280px,0.85fr)] md:items-start md:gap-10 md:py-10 lg:gap-14">
-          <div className="min-w-0 md:sticky md:top-[calc(var(--header-h)+1.5rem)] md:self-start">
-            <ProductGallery images={product.images} title={product.title} />
-          </div>
+        <PdpPurchase
+          product={product}
+          locale={locale}
+          afterBuyBox={
+            <>
+              <CompleteTheLook items={look} locale={locale} />
 
-          <div className="min-w-0 md:max-w-md md:justify-self-stretch lg:max-w-none">
-            <ProductBuyBox product={product} locale={locale} />
-
-            <CompleteTheLook items={look} locale={locale} />
-
-            <div className="mt-10 border-t border-line">
-              {product.description ? (
-                <PdpAccordion title={it ? 'Descrizione' : 'Description'} defaultOpen>
-                  <span className="whitespace-pre-line">{product.description}</span>
+              <div className="mt-10 border-t border-line">
+                {product.description ? (
+                  <PdpAccordion title={it ? 'Descrizione' : 'Description'} defaultOpen>
+                    <span className="whitespace-pre-line">{product.description}</span>
+                  </PdpAccordion>
+                ) : null}
+                {(() => {
+                  const details: Array<{ label: string; value: string }> = [];
+                  if (product.fabric?.trim()) {
+                    details.push({
+                      label: it ? 'Materiale' : 'Material',
+                      value: product.fabric.trim(),
+                    });
+                  }
+                  if (product.fit_notes?.trim()) {
+                    details.push({
+                      label: it ? 'Vestibilità' : 'Fit',
+                      value: product.fit_notes.trim(),
+                    });
+                  }
+                  if (product.season?.trim()) {
+                    details.push({
+                      label: it ? 'Stagione' : 'Season',
+                      value: product.season.trim(),
+                    });
+                  }
+                  if (product.care_notes?.trim()) {
+                    details.push({
+                      label: it ? 'Lavaggio' : 'Washing',
+                      value: product.care_notes.trim(),
+                    });
+                  }
+                  if (product.warranty?.trim()) {
+                    details.push({
+                      label: it ? 'Garanzia' : 'Warranty',
+                      value: product.warranty.trim(),
+                    });
+                  }
+                  if (details.length === 0) return null;
+                  return (
+                    <PdpAccordion title={it ? 'Dettagli' : 'Details'} defaultOpen>
+                      <ul className="list-disc space-y-2 pl-5 text-ink">
+                        {details.map((row) => (
+                          <li key={row.label}>
+                            <strong>{row.label}:</strong> {row.value}
+                          </li>
+                        ))}
+                      </ul>
+                    </PdpAccordion>
+                  );
+                })()}
+                <PdpAccordion title={it ? 'Spedizioni e resi' : 'Shipping & returns'}>
+                  <Link
+                    href={`/${locale}/shipping-returns`}
+                    className="underline hover:text-ink"
+                  >
+                    {it
+                      ? 'Spedizione in tutta Italia · Resi e cambi'
+                      : 'Shipping across Italy · Returns'}
+                  </Link>
                 </PdpAccordion>
-              ) : null}
-              {product.fabric ? (
-                <PdpAccordion title={it ? 'Tessuto' : 'Fabric'}>
-                  {product.fabric}
-                </PdpAccordion>
-              ) : null}
-              {product.fit_notes ? (
-                <PdpAccordion title={it ? 'Vestibilità' : 'Fit'}>
-                  <span className="whitespace-pre-line">{product.fit_notes}</span>
-                </PdpAccordion>
-              ) : null}
-              {product.care_notes ? (
-                <PdpAccordion title={it ? 'Cura' : 'Care'}>
-                  {product.care_notes}
-                </PdpAccordion>
-              ) : null}
-              <PdpAccordion title={it ? 'Spedizioni e resi' : 'Shipping & returns'}>
-                <Link
-                  href={`/${locale}/shipping-returns`}
-                  className="underline hover:text-ink"
-                >
-                  {it
-                    ? 'Spedizione in tutta Italia · Resi e cambi'
-                    : 'Shipping across Italy · Returns'}
-                </Link>
-              </PdpAccordion>
-            </div>
-          </div>
-        </div>
+              </div>
+            </>
+          }
+        />
 
         {related.length > 0 ? (
           <div className="container-wide mt-12 border-t border-line pt-10 md:mt-16 md:pt-12">

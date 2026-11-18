@@ -7,9 +7,13 @@ import type { Audience, Locale, ProductCard } from '@/lib/types';
 
 function LifestylePanel({
   image,
+  href,
+  cta,
   className = '',
 }: {
   image: string | null;
+  href: string;
+  cta: string;
   className?: string;
 }) {
   return (
@@ -27,6 +31,15 @@ function LifestylePanel({
           aria-hidden
         />
       )}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/35 via-transparent to-transparent" aria-hidden />
+      <div className="absolute top-0 left-0 p-6 md:p-8 lg:p-10">
+        <Link
+          href={href}
+          className="inline-flex min-h-11 items-center bg-ivory px-7 py-3.5 text-[11px] tracking-[0.22em] text-ink uppercase transition duration-(--dur-base) hover:bg-ivory/90"
+        >
+          {cta}
+        </Link>
+      </div>
     </div>
   );
 }
@@ -51,6 +64,7 @@ export function NewArrivalsBand({
   }
 
   const href = shopHref(locale, audience, { shelf: 'new_arrivals' });
+  const cta = it ? 'Acquista ora' : 'Shop now';
   const subtitle = it
     ? 'Scopri le ultime novità della collezione.'
     : 'Discover the latest from the collection.';
@@ -65,7 +79,7 @@ export function NewArrivalsBand({
         href={href}
         className="mt-6 inline-flex min-h-11 items-center bg-ink px-7 py-3.5 text-[11px] tracking-[0.22em] text-ivory uppercase transition duration-(--dur-base) hover:bg-ink/85"
       >
-        {it ? 'Acquista ora' : 'Shop now'}
+        {cta}
       </Link>
     </div>
   );
@@ -93,6 +107,8 @@ export function NewArrivalsBand({
         {lifestyleImage || !products.length ? (
           <LifestylePanel
             image={lifestyleImage}
+            href={href}
+            cta={cta}
             className="aspect-16/10 max-h-[32vh] w-full min-h-36"
           />
         ) : null}
@@ -100,7 +116,12 @@ export function NewArrivalsBand({
 
       {/* Desktop: lifestyle | copy + rail */}
       <div className="hidden lg:grid lg:grid-cols-2">
-        <LifestylePanel image={lifestyleImage} className="min-h-[70vh]" />
+        <LifestylePanel
+          image={lifestyleImage}
+          href={href}
+          cta={cta}
+          className="min-h-[70vh]"
+        />
         <div className="flex flex-col justify-center py-16 pl-12 pr-(--gutter) xl:py-20">
           {copy}
           {products.length > 0 ? (

@@ -7,6 +7,7 @@ import { useCart } from '@/lib/cart';
 import { InfoModal } from '@/components/info/InfoModal';
 import { ShippingReturnsBody } from '@/components/info/ShippingReturnsBody';
 import { SizeGuideBody } from '@/components/info/SizeGuideBody';
+import { primaryImageUrlForColor } from '@/lib/product-images';
 import type { Locale, ProductDetail } from '@/lib/types';
 
 function discountPercent(price: string | null | undefined, compare: string | null | undefined) {
@@ -23,20 +24,30 @@ type InfoKind = 'size' | 'shipping' | null;
 export function ProductBuyBox({
   product,
   locale,
+  selectedColorKey,
+  onColorKeyChange,
 }: {
   product: ProductDetail;
   locale: Locale;
+  selectedColorKey?: string | null;
+  onColorKeyChange?: (colorKey: string | null) => void;
 }) {
   const { addItem } = useCart();
   const it = locale === 'it';
 
   const colors = useMemo(() => {
-    const map = new Map<string, string | null>();
+    const map = new Map<string, { name: string; key: string; hex: string | null }>();
     for (const v of product.variants) {
       if (!v.color) continue;
-      if (!map.has(v.color)) map.set(v.color, v.color_hex);
+      if (!map.has(v.color)) {
+        map.set(v.color, {
+          name: v.color,
+          key: v.color_key ?? v.color,
+          hex: v.color_hex,
+        });
+      }
     }
-    return [...map.entries()].map(([name, hex]) => ({ name, hex }));
+    return [...map.values()];
   }, [product.variants]);
 
   const sizes = useMemo(() => {
@@ -50,12 +61,29 @@ export function ProductBuyBox({
   const defaultColor =
     colors.find((c) =>
       product.variants.some((v) => v.color === c.name && v.in_stock),
-    )?.name ?? colors[0]?.name ?? null;
+    ) ?? colors[0] ?? null;
 
-  const [color, setColor] = useState<string | null>(defaultColor);
+  const [internalColorKey, setInternalColorKey] = useState<string | null>(
+    defaultColor?.key ?? null,
+  );
+  const colorKey =
+    selectedColorKey !== undefined ? selectedColorKey : internalColorKey;
+  const setColorKey = (next: string | null) => {
+    if (selectedColorKey === undefined) setInternalColorKey(next);
+    onColorKeyChange?.(next);
+  };
+
+  const color =
+    colors.find((c) => c.key === colorKey)?.name ??
+    colors.find((c) => c.name === colorKey)?.name ??
+    defaultColor?.name ??
+    null;
+
   const [size, setSize] = useState<string | null>(() => {
     const first = product.variants.find(
-      (v) => v.in_stock && (!defaultColor || v.color === defaultColor),
+      (v) =>
+        v.in_stock &&
+        (!defaultColor || v.color === defaultColor.name),
     );
     return first?.size ?? sizes[0] ?? null;
   });
@@ -109,10 +137,10 @@ export function ProductBuyBox({
         color: selected.color,
         colorHex: selected.color_hex,
         unitPrice: selected.price,
-        imageUrl:
-          product.images.find((i) => i.is_primary)?.url ??
-          product.images[0]?.url ??
-          null,
+        imageUrl: primaryImageUrlForColor(
+          product.images,
+          selected.color_key ?? selected.color,
+        ),
       },
       qty,
     );
@@ -173,16 +201,16 @@ export function ProductBuyBox({
               </p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {colors.map((c) => {
-                  const active = color === c.name;
+                  const active = colorKey === c.key || color === c.name;
                   return (
                     <button
-                      key={c.name}
+                      key={c.key}
                       type="button"
                       title={c.name}
                       aria-label={c.name}
                       aria-pressed={active}
                       onClick={() => {
-                        setColor(c.name);
+                        setColorKey(c.key);
                         const nextSize = product.variants.find(
                           (v) => v.color === c.name && v.in_stock,
                         )?.size;

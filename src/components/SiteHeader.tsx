@@ -103,7 +103,10 @@ export function SiteHeader({
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
     const q = query.trim();
-    window.location.href = shopHref(locale, audience, q ? { q } : {});
+    // Global search across Donna / Uomo / Bambini — results link to the right audience.
+    window.location.href = q
+      ? `/${locale}/search?q=${encodeURIComponent(q)}`
+      : `/${locale}/search`;
   };
 
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -312,7 +315,9 @@ export function SiteHeader({
             openMiniCart();
           }}
           onSearch={(q) => {
-            window.location.href = shopHref(locale, audience, q ? { q } : {});
+            window.location.href = q
+              ? `/${locale}/search?q=${encodeURIComponent(q)}`
+              : `/${locale}/search`;
           }}
         />
       ) : null}

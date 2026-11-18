@@ -1,4 +1,5 @@
 import type {
+  Audience,
   Brand,
   CategoryNode,
   CheckoutOrder,
@@ -163,6 +164,40 @@ export async function fetchBrand(locale: Locale, slug: string): Promise<Brand> {
 export async function fetchBrands(locale: Locale): Promise<Brand[]> {
   const json = await apiGet<ApiList<Brand[]>>('/brands', locale);
   return json.data ?? [];
+}
+
+export type SearchCategoryHit = {
+  id: number;
+  slug: string;
+  name: string;
+  audience: Audience;
+  image_url: string | null;
+};
+
+export type SearchBrandHit = {
+  id: number;
+  slug: string;
+  name: string;
+  logo_url: string | null;
+};
+
+export type SearchProductHit = ProductCard & {
+  audience: Audience | null;
+};
+
+export type SearchResult = {
+  categories: SearchCategoryHit[];
+  brands: SearchBrandHit[];
+  products: SearchProductHit[];
+};
+
+export async function fetchSearch(locale: Locale, q: string): Promise<SearchResult> {
+  const json = await apiGet<ApiList<SearchResult>>('/search', locale, { q });
+  return {
+    categories: json.data?.categories ?? [],
+    brands: json.data?.brands ?? [],
+    products: json.data?.products ?? [],
+  };
 }
 
 export async function fetchProducts(

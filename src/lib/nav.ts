@@ -62,7 +62,9 @@ export function navCopy(locale: Locale) {
     shop: it ? 'Acquista' : 'Shop',
     close: it ? 'Chiudi' : 'Close',
     menu: it ? 'Menu' : 'Menu',
-    searchPlaceholder: it ? 'Cerca prodotti, brand…' : 'Search products, brands…',
+    searchPlaceholder: it
+      ? 'Cerca prodotti, brand, categorie…'
+      : 'Search products, brands, categories…',
     back: it ? 'Indietro' : 'Back',
     type: it ? 'Tipo' : 'Type',
     viewAll: it ? 'Vedi tutto' : 'View all',

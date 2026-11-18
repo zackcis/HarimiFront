@@ -14,6 +14,7 @@ import {
 import { createPortal } from 'react-dom';
 import { formatEur } from '@/lib/api';
 import { useCart } from '@/lib/cart';
+import { imagesForColor, primaryImageUrlForColor } from '@/lib/product-images';
 import type { Locale, ProductDetail } from '@/lib/types';
 
 type QuickLookContextValue = { open: (slug: string, locale: Locale) => void };
@@ -234,19 +235,19 @@ function QuickLookPanel({
   const { addItem } = useCart();
   const it = locale === 'it';
 
-  const images = useMemo(
-    () => product.images.filter((i) => i.url).sort((a, b) => a.position - b.position),
-    [product.images],
-  );
-  const [activeImg, setActiveImg] = useState(0);
-
   const colors = useMemo(() => {
-    const map = new Map<string, string | null>();
+    const map = new Map<string, { name: string; key: string; hex: string | null }>();
     for (const v of product.variants) {
       if (!v.color) continue;
-      if (!map.has(v.color)) map.set(v.color, v.color_hex);
+      if (!map.has(v.color)) {
+        map.set(v.color, {
+          name: v.color,
+          key: v.color_key ?? v.color,
+          hex: v.color_hex,
+        });
+      }
     }
-    return [...map.entries()].map(([name, hex]) => ({ name, hex }));
+    return [...map.values()];
   }, [product.variants]);
 
   const sizes = useMemo(() => {
@@ -258,14 +259,27 @@ function QuickLookPanel({
   }, [product.variants]);
 
   const defaultColor =
-    colors.find((c) => product.variants.some((v) => v.color === c.name && v.in_stock))?.name ??
-    colors[0]?.name ??
+    colors.find((c) => product.variants.some((v) => v.color === c.name && v.in_stock)) ??
+    colors[0] ??
     null;
 
-  const [color, setColor] = useState<string | null>(defaultColor);
+  const [colorKey, setColorKey] = useState<string | null>(defaultColor?.key ?? null);
+  const color =
+    colors.find((c) => c.key === colorKey)?.name ?? defaultColor?.name ?? null;
+
+  const images = useMemo(() => {
+    const filtered = imagesForColor(product.images, colorKey).filter((i) => i.url);
+    return [...filtered].sort((a, b) => a.position - b.position);
+  }, [product.images, colorKey]);
+  const [activeImg, setActiveImg] = useState(0);
+
+  useEffect(() => {
+    setActiveImg(0);
+  }, [colorKey]);
+
   const [size, setSize] = useState<string | null>(() => {
     const first = product.variants.find(
-      (v) => v.in_stock && (!defaultColor || v.color === defaultColor),
+      (v) => v.in_stock && (!defaultColor || v.color === defaultColor.name),
     );
     return first?.size ?? sizes[0] ?? null;
   });
@@ -301,7 +315,10 @@ function QuickLookPanel({
         color: selected.color,
         colorHex: selected.color_hex,
         unitPrice: selected.price,
-        imageUrl: images[0]?.url ?? null,
+        imageUrl: primaryImageUrlForColor(
+          product.images,
+          selected.color_key ?? selected.color,
+        ),
       },
       qty,
     );
@@ -390,15 +407,15 @@ function QuickLookPanel({
               </p>
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {colors.map((c) => {
-                  const active = color === c.name;
+                  const active = colorKey === c.key || color === c.name;
                   return (
                     <button
-                      key={c.name}
+                      key={c.key}
                       type="button"
                       aria-label={c.name}
                       aria-pressed={active}
                       onClick={() => {
-                        setColor(c.name);
+                        setColorKey(c.key);
                         const nextSize = product.variants.find(
                           (v) => v.color === c.name && v.in_stock,
                         )?.size;

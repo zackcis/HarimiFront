@@ -25,14 +25,23 @@ export type ProductDetail = {
   fabric: string | null;
   care_notes: string | null;
   fit_notes: string | null;
+  season: string | null;
+  warranty: string | null;
   brand: { slug: string; name: string; logo_url: string | null } | null;
   category: { slug: string; name: string; path: string[] } | null;
-  images: Array<{ url: string | null; is_primary: boolean; position: number }>;
+  images: Array<{
+    url: string | null;
+    color_key?: string | null;
+    color?: string | null;
+    is_primary: boolean;
+    position: number;
+  }>;
   variants: Array<{
     id: number;
     sku: string | null;
     size: string | null;
     color: string | null;
+    color_key?: string | null;
     color_hex: string | null;
     price: string;
     compare_at_price: string | null;
