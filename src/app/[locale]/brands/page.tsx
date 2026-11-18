@@ -85,7 +85,7 @@ export default async function BrandsPage({
                   <img
                     src={brand.logo_url}
                     alt=""
-                    className="mb-4 h-16 w-auto max-w-[220px] object-contain opacity-95 transition group-hover:opacity-100 md:h-20"
+                    className="mb-4 h-24 w-auto max-w-[280px] object-contain opacity-95 transition group-hover:opacity-100 md:h-28"
                   />
                 ) : null}
                 <span className="font-serif text-2xl">{brand.name}</span>
