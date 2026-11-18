@@ -65,7 +65,7 @@ export default async function AudienceHomePage({
   };
   try {
     const [merchResult, brandList, categoryList, media] = await Promise.all([
-      fetchMerchandising(locale),
+      fetchMerchandising(locale, audience),
       fetchBrands(locale),
       fetchCategories(locale),
       fetchSiteMedia(locale),

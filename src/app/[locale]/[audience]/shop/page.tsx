@@ -99,7 +99,7 @@ export default async function ShopPage({
         : null;
 
     if (isShelf && rawQuery.shelf) {
-      products = await fetchMerchandisingShelf(locale, rawQuery.shelf);
+      products = await fetchMerchandisingShelf(locale, rawQuery.shelf, audience);
     } else {
       const result = await fetchProducts(locale, {
         q: query.q,
@@ -129,7 +129,7 @@ export default async function ShopPage({
   let recommendations: ProductCard[] = [];
   if (!isShelf && products.length > 0) {
     try {
-      recommendations = (await fetchMerchandisingShelf(locale, 'best_sellers')).slice(0, 4);
+      recommendations = (await fetchMerchandisingShelf(locale, 'best_sellers', audience)).slice(0, 4);
     } catch {
       recommendations = [];
     }
@@ -141,7 +141,7 @@ export default async function ShopPage({
   let bestsellers: ProductCard[] = [];
   if (isSoftEmpty) {
     try {
-      bestsellers = (await fetchMerchandisingShelf(locale, 'best_sellers')).slice(0, 8);
+      bestsellers = (await fetchMerchandisingShelf(locale, 'best_sellers', audience)).slice(0, 8);
     } catch {
       bestsellers = [];
     }

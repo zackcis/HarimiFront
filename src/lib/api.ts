@@ -257,12 +257,15 @@ export async function fetchProduct(locale: Locale, slug: string): Promise<Produc
   return json.data;
 }
 
-export async function fetchMerchandising(locale: Locale): Promise<MerchandisingResult> {
+export async function fetchMerchandising(
+  locale: Locale,
+  audience: Audience,
+): Promise<MerchandisingResult> {
   const json = await apiGet<
     ApiList<Record<string, unknown>> & {
       meta?: { sections?: Record<string, { title?: string }> };
     }
-  >('/merchandising', locale);
+  >('/merchandising', locale, { audience });
   const raw = json.data ?? {};
   const shelves: Record<string, ProductCard[]> = {};
   for (const [key, value] of Object.entries(raw)) {
@@ -278,8 +281,12 @@ export async function fetchMerchandising(locale: Locale): Promise<MerchandisingR
   return { shelves, titles };
 }
 
-export async function fetchMerchandisingShelf(locale: Locale, shelf: string): Promise<ProductCard[]> {
-  const json = await apiGet<ApiList<unknown>>(`/merchandising/${shelf}`, locale);
+export async function fetchMerchandisingShelf(
+  locale: Locale,
+  shelf: string,
+  audience: Audience,
+): Promise<ProductCard[]> {
+  const json = await apiGet<ApiList<unknown>>(`/merchandising/${shelf}`, locale, { audience });
   return unwrapProductList(json.data);
 }
 
